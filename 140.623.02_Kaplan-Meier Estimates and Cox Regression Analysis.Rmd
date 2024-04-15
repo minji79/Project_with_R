@@ -1,0 +1,224 @@
+---
+title: "140.623.02_Kaplan-Meier Estimates and Cox Regression Analysis"
+output: html_document
+date: "2024-04-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Explore the data using descriptive statistics:
+
+```{r}
+# import data set
+library(tidyverse)
+library(haven)
+library(janitor)
+library(pROC)
+library(PredictABEL)
+library(dplyr)
+library(tidyverse)
+pbcData = read_csv("pbctrial.csv")
+
+## exploring the data
+summary(pbcData)
+
+## table 1 (outcome = death) - stratified by exposure 
+## age
+pbcData %>%
+  tabyl(drug, agecat) %>%
+  adorn_totals(where="row")%>%
+  adorn_totals(where="col")%>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting(digits=1) %>%
+  adorn_ns()%>%
+  adorn_title()
+
+## sex
+pbcData %>%
+  tabyl(drug, sex) %>%
+  adorn_totals(where="row")%>%
+  adorn_totals(where="col")%>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting(digits=1) %>%
+  adorn_ns()%>%
+  adorn_title()
+
+## histo
+pbcData %>%
+  tabyl(drug, histo) %>%
+  adorn_totals(where="row")%>%
+  adorn_totals(where="col")%>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting(digits=1) %>%
+  adorn_ns()%>%
+  adorn_title()
+
+## bill
+summary(subset(pbcData$bil, pbcData$drug == 1))
+sd(subset(pbcData$bil, pbcData$drug == 1))
+
+summary(subset(pbcData$bil, pbcData$drug == 0))
+sd(subset(pbcData$bil, pbcData$drug == 0))
+
+### mission data
+variables <- c("case", "drug", "sex", "bil", "histo", "survyr", "ageyr")
+
+#missing value check
+for (i in variables) {
+  missing_count <- sum(is.na(pbcData[[i]]))
+  cat("Missing values in", i, ":", missing_count, "\n")
+}
+```
+
+### 2. Define a survival object, defining the time variable (survyr) and the event (death == 1)
+
+```{r}
+## survival analysis
+## Define a survival object, defining the time variable (survyr) and the event (death == 1).
+#install.packages("survival")
+library(survival)
+
+pbcData$SurvObj = with(pbcData, Surv(survyr, death == 1))
+
+## drug failure incidence rates
+pbcData %>%
+  group_by(drug) %>%
+  summarize(failure = sum(death==1), time = sum(survyr), incidence.rate=failure/time)
+```
+
+### 3. Explore differences in time to death by different baseline variables using graphs and complementary log-log plots
+
+```{r}
+# estimate survival curves for entire sample
+km.overall = survfit(SurvObj ~ 1, data = pbcData,
+                     type="kaplan-meier", conf.type="log-log")
+km.overall
+summary(km.overall)
+
+# plot km curves
+plot(km.overall)
+
+# for drug group
+# distribution
+Freq <- table(pbcData$drug, useNA="ifany")
+Percentage <- round((prop.table(Freq)*100),2)
+cbind(Freq,Percentage)
+
+# estimate survival curves 
+km.drug = survfit(SurvObj ~ drug, data = pbcData,
+                  type="kaplan-meier", conf.type="log-log")
+plot(km.drug, main="Kaplan-Meier survival estimates", xlab="Time(years)", ylab="S(t)", col=c("blue", "red"))
+legend("topright", legend=c("drug = 0", "drug = 1"), col=c("blue", "red"), lwd=1)
+
+km.drug
+summary(km.drug)
+
+#install.packages("survminer")
+library(survminer)
+
+ggsurvplot(km.drug, risk.table=TRUE)
+
+# log rank test for equality of survivor functions
+survdiff(SurvObj ~ drug, data=pbcData)
+
+# complimentary log-log plot - CLL plot
+plot(km.drug, fun="cloglog", main="Complimentary Log-log Plot", ylab="log(-log(Survival Probability)",
+     xlab="Analysis time (shown on log scale)", col=c("blue", "red"))
+legend("topleft", legend=c("drug = 0", "drug = 1"), col=c("blue", "red"), lwd=1)
+
+
+# for age group - categories
+# distribution
+Freq <- table(pbcData$agecat, useNA="ifany")
+Percentage <- round((prop.table(Freq)*100),2)
+cbind(Freq,Percentage)
+
+# estimate survival curves 
+km.agecat = survfit(SurvObj ~ agecat, data = pbcData,
+                  type="kaplan-meier", conf.type="log-log")
+plot(km.agecat, main="Kaplan-Meier survival estimates", xlab="Time(years)", ylab="S(t)", col=c("blue", "red", "green"))
+legend("topright", legend=c("< 45 yrs", "45 - 55 yrs", ">= 55 yrs"), col=c("blue", "red", "green"), lwd=1)
+
+# complimentary log-log plot - CLL plot
+plot(km.agecat, fun="cloglog", main="Complimentary Log-log Plot", ylab="log(-log(Survival Probability)",
+     xlab="Analysis time (shown on log scale)", col=c("blue", "red", "green"))
+legend("topleft", legend=c("< 45 yrs", "45 - 55 yrs", ">= 55 yrs"), col=c("blue", "red", "green"), lwd=1)
+
+# log rank test for equality of survivor functions
+survdiff(SurvObj ~ agecat, data=pbcData)
+
+## sex
+# distribution
+Freq <- table(pbcData$sex, useNA="ifany")
+Percentage <- round((prop.table(Freq)*100),2)
+cbind(Freq,Percentage)
+
+# estimate survival curves 
+km.sex = survfit(SurvObj ~ sex, data = pbcData,
+                  type="kaplan-meier", conf.type="log-log")
+plot(km.sex, main="Kaplan-Meier survival estimates", xlab="Time(years)", ylab="S(t)", col=c("blue", "red"))
+legend("topright", legend=c("Female", "Male"), col=c("blue", "red"), lwd=1)
+
+# complimentary log-log plot - CLL plot
+plot(km.sex, fun="cloglog", main="Complimentary Log-log Plot", ylab="log(-log(Survival Probability)",
+     xlab="Analysis time (shown on log scale)", col=c("blue", "red"))
+legend("topleft", legend=c("Female", "Male"), col=c("blue", "red"), lwd=1)
+
+# log rank test for equality of survivor functions
+survdiff(SurvObj ~ sex, data=pbcData)
+
+## histo
+# distribution
+Freq <- table(pbcData$histo, useNA="ifany")
+Percentage <- round((prop.table(Freq)*100),2)
+cbind(Freq,Percentage)
+
+# estimate survival curves 
+km.histo = survfit(SurvObj ~ histo, data = pbcData,
+                 type="kaplan-meier", conf.type="log-log")
+plot(km.histo, main="Kaplan-Meier survival estimates", xlab="Time(years)", ylab="S(t)", col=c("blue", "red", "green", "pink"))
+legend("topright", legend=c("Stage 1", "Stage 2", "Stage 3", "Stage 4"), col=c("blue", "red", "green", "pink"), lwd=1)
+
+# complimentary log-log plot - CLL plot
+plot(km.histo, fun="cloglog", main="Complimentary Log-log Plot", ylab="log(-log(Survival Probability)",
+     xlab="Analysis time (shown on log scale)", col=c("blue", "red", "green", "pink"))
+legend("topleft", legend=c("Stage 1", "Stage 2", "Stage 3", "Stage 4"), col=c("blue", "red", "green", "pink"), lwd=1)
+
+# log rank test for equality of survivor functions
+survdiff(SurvObj ~ histo, data=pbcData)
+
+## bil
+summary(pbcData$bil)
+sd(pbcData$bil)
+
+# log rank test for equality of survivor functions
+survdiff(SurvObj ~ bil, data=pbcData)
+```
+
+### 4. Fit several Cox proportional hazards regression models to the ungrouped survival data
+
+```{r}
+## Fit several Cox proportional hazards regression models to the ungrouped survival data
+model1 = coxph(SurvObj ~ drug, data = pbcData)
+summary(model1)
+
+model2 = coxph(SurvObj ~ drug + sex + bil + as.factor(histo), data = pbcData) 
+summary(model2)
+
+model3 = coxph(SurvObj ~ drug + sex + bil + agecat + as.factor(histo), data = pbcData) 
+summary(model3)
+
+
+##calculate aic 
+aic_1 <- AIC(model1)
+aic_1
+
+aic_2 <- AIC(model2)
+aic_2
+
+aic_3 <- AIC(model3)
+aic_3
+```
+

@@ -1,0 +1,170 @@
+---
+title: '140.623.01_Sample Size Considerations: Estimation and Hypothesis Testing'
+output: html_document
+date: "2024-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Study Design - Sample Size Estimation
+
+### 1. choose an appropriate sample size for estimating the 16- month mortality rate for children younger than 3 years of age
+
+According to the information from the Nepal data set, I can make the following assumptions to calculate a sample size for estimating the 16- month mortality rate for children younger than 3 years of age: p = perc_died for placebo group = 0.0294, q = 1 – p = 0.9706, d=0.05,  = 0.05.
+With these values, the sample size estimating mortality to within +/- 0.5% is 44 (rounded up from 43.85).
+
+When supposing there is no prior information about the proportion, I assume p = q = 0.5 to find the most conservative sample size. The result is 385 (rounded up from 384.2). I can find the sample size increase very dramatically.
+
+```{r}
+# import dataset
+library(tidyverse)
+nepalA = read_csv("nepal621.csv")
+summary(nepalA)
+
+# filtering for the children younger than 3 years of age 
+nepalbelow3 = nepalA %>%
+  filter(age <= 3)
+
+# calculating p and q
+nepalbelow3 %>%
+  group_by(trt) %>%
+  summarize(n_alive = sum(status=="Alive"),
+            perc_alive = n_alive/n(),
+            n_died = sum(status=="Died"),
+            perc_died = n_died/n(),
+                          obs=n())
+
+# calculate a sample size
+n1 <- (1.96)^2 * 0.0294 * (1 - 0.0294) / (0.05)^2
+n1
+
+n2 <- (1.96)^2 * 0.5 * 0.5 / (0.05)^2
+n2
+```
+
+### 2. 
+
+**Given assumption**
+**Now suppose you have a chance to investigate the effect of vitamin A supplementation on the mortality of children under 3 years of age. Confirm from the data set that the 16-month mortality in the placebo group is 0.0294 and the 16- month mortality in the Vitamin A group is 0.0245 for the Nepal study. The estimated relative risk of death in the placebo group as compared to the Vitamin A group is 0.029/0.0245 = 1.2. Assuming a significance level of 0.05 and power of 80%, the sample size needed in the new study to detect a relative risk of 1.2 is 17,144 children per group according to the results on the next page. A total sample size of 34,288 children would be required.**
+
+I can figure out from the data set that the 16-month mortality in the placebo group is 0.0294 and the 16- month mortality in the Vitamin A group is 0.0245 for the Nepal study (you can find the detail code in the first question). With assumptions of a significance level of 0.05 and power of 80%, the sample size needed in the new study to detect a relative risk of 1.2 is 17,144 children per group according to the results obtained from the following command, which means I need 34,288 children in total.
+
+```{r}
+##  The power.prop.test() command in R can be used with the results of the Nepal trial to choose the size of the vitamin A and control groups (assuming equal sample sizes for both groups) for the new study.
+power.prop.test(n=NULL, p1=0.0294, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+
+## to calculate Z(a/2) and Z(b) value
+## Z(a/2) 
+qnorm(0.975)
+
+## Z(b) 
+qnorm(0.9)
+```
+
+**Construct a table that displays the total sample sizes required under various assumptions about the mortality rate in the control group and the relative risk of interest. Assume a significance level of 0.05 and 80% power. Vary the assumptions by:**
+
+a. Assuming that the control group mortality rate (risk) is:
+1. the same as that observed in Nepal placebo group of children < 3 years of age
+2. or .5% lower
+3.or .5% higher
+
+b. Assuming that the relative risk of death for children in the control group as compared
+to children receiving vitamin A is hypothesized to be:
+1. 1.2 (the same as the relative risk that was estimated for Nepali children
+in this age group
+2. or 1.5
+3. or 1.75.
+
+```{r}
+n_a1 <- (1.96)^2 * 0.0294 * (1 - 0.0294) / (0.05)^2
+n_a1
+
+#### 4a-1 : p1 = 0.0294
+z1 = 1.96
+z2 = 0.84
+
+p1 = 0.0294
+q1= 1-p1
+p2 = 0.0245
+q2 = 1 - p2
+p=(p1+p2)/2
+q=1-p
+delta = p1 - p2
+#100mil - increase in power -> increase in ss
+
+n <- z1*(2*p*q)^(1/2) + z2*(p1*q1 + p2*q2)^(1/2)
+sample_size = n/delta^2
+sample_size*2
+
+#### a-1 
+power.prop.test(n=NULL, p1=0.0294, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+
+#### a-2 
+power.prop.test(n=NULL, p1=0.029253, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+
+#### a-3
+power.prop.test(n=NULL, p1=0.029547, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+
+#### b-1 
+rr <- c(1.2, 1.5, 1.75)
+p1 = rr*p2
+
+power.prop.test(n=NULL, p1 = 1.2*0.0245, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+#### b-2 
+power.prop.test(n=NULL, p1 = 1.5*0.0245, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+
+#### b-3 
+power.prop.test(n=NULL, p1 = 1.75*0.0245, p2=0.0245, sig.level=0.05, power=0.8,
+                alternative="two.sided")
+
+```
+
+**Construct another table that displays the total sample sizes required under the same
+varying assumptions of the mortality rate in the control group and the relative risk of interest. This time, assume a significance level of 0.05 and 90% power. Comment on what you observe.**
+
+
+```{r}
+# a-1 
+power.prop.test(n=NULL, p1=0.0294, p2=0.0245, sig.level=0.05, power=0.9,
+                alternative="two.sided")
+n=22951*2
+n
+
+# a-2 
+power.prop.test(n=NULL, p1=0.029253, p2=0.0245, sig.level=0.05, power=0.9,
+                alternative="two.sided")
+n=24373*2
+n
+
+# a-3
+power.prop.test(n=NULL, p1=0.029547, p2=0.0245, sig.level=0.05, power=0.9,
+                alternative="two.sided")
+n=21691*2
+n
+
+# b-1
+power.prop.test(n=NULL, p1 = 1.2*0.0245, p2=0.0245, sig.level=0.05, power=0.9,
+                alternative="two.sided")
+n=22950*2
+n
+
+# b-2 
+power.prop.test(n=NULL, p1 = 1.5*0.0245, p2=0.0245, sig.level=0.05, power=0.9,
+                alternative="two.sided")
+n=4156*2
+n
+
+# b-3 
+power.prop.test(n=NULL, p1 = 1.75*0.0245, p2=0.0245, sig.level=0.05, power=0.9,
+                alternative="two.sided")
+```
+
+In determining the necessary overall sample size for estimating the 16-month mortality rate for children younger than 3 years of age, I established several assumptions about the mortality rate in the control group and the relative risk of interest. To enhance statistical power, a significance level of 0.05 and 90% power were employed. Various assumptions were considered, and the computed total sample sizes indicated a requirement of 45,901 participants assuming a mortality rate of 0.0294, derived from available data in the Nepal dataset. Allowing for an estimated mortality rate variation within 5%, the range for the required sample size fluctuates from 43,382 to 48,746. Alternatively, a total of 45,900 participants would be needed if considering a relative risk of 1.2, as indicated by prior findings in the Nepal dataset. However, the necessary sample size varies from 45,900 to 48,746 as the relative risk of death increases to 1.5 and 1.75, respectively. Based on the sensitivity analysis, a more robust outcome can be anticipated with assumptions about the mortality rate. Furthermore, in a conservative approach, the largest sample size of 48,746 was chosen for our study. 

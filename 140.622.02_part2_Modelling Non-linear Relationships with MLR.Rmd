@@ -1,0 +1,154 @@
+---
+title: "140.622.02_part2_Modeling Non-linear Relationships with MLR"
+output: html_document
+date: "2023-11-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Modelling Non-linear Relationships with MLR 
+
+### 1. Plot weight against age and calcaulate the sample mean weight
+
+**Plot weight against age (use small plotting symbols, e.g. dots, and jitter the points so they can all be seen).and calculate the sample mean weight for each month of age and add the estimated means for each month to the graph (with bold symbols and a connecting line) to highlight the trend. To compute mean weight for each month of age will work because age takes on 13 unique values (the integers 0-12): if age was truly continuous, the following command would fail to work. (Scientific digression: this pattern actually represents the convolution of two biological processes: growth and seasonality. For simplicity, below we will refer to it as "growth.") **
+
+
+```{r}
+# import the dataset
+library(tidyverse)
+nepalA = read_csv("nepal_anthro.csv")
+
+# omit children with ages greater than 12 months.
+# also omit all children for whom height, weight or arm circumference is missing.
+nepalData = nepalA %>% ### store this dataset under a new name
+  filter(age<=12) %>% ### keep only children with age <= 12
+  filter(!is.na(height), !is.na(weight), !is.na(armcirc)) ### remove NAs
+
+nepalData = nepalData %>%
+  mutate(gender=recode_factor(sex, '1'="Male", '2'="Female"))
+
+# Plot weight against age (use small plotting symbols, e.g. dots, and jitter the points so they can all be seen
+qplot(x=jitter(age), y=weight, data=nepalData, xlab="Age in months",
+      ylab="Weight in kg", ylim=c(0,12))
+
+#Calculate the sample mean weight for each month of age and add the estimated means
+#To compute mean weight for each month of age will work because age takes on 13 unique values (the integers 0-12)
+nepalData %>% group_by(age) %>%summarize(mean=mean(weight))
+
+#To add means to previous graph:
+qplot(x=jitter(age), y=weight, data=nepalData, xlab="Age in months",
+      ylab="Weight in kg", ylim=c(0,12)) +
+  stat_summary(aes(x=age, y=weight), fun.y=mean, geom="line", lwd=2, color="red")
+
+```
+
+### 2. Use simple linear regression to regress weight on age and add the least squares line to the plot
+
+The linear regression of weight on age is, E[weight] = 3.67 + 0.33*age
+
+```{r}
+#Use simple linear regression to regress weight on age and add the least squares line to the plot
+model4 = lm(weight ~ age, data=nepalData)
+summary(model4)
+confint(model4)
+
+qplot(x=jitter(age), y=weight, data=nepalData, xlab="Age in months",
+      ylab="Weight in kg", ylim=c(0,12)) + geom_smooth(method="lm")
+
+#OR, a more general way to plot “fitted values” on a plot:
+qplot(x=jitter(age), y=weight, data=nepalData, xlab="Age in months",
+      ylab="Weight in kg", ylim=c(0,12)) +
+  geom_line(aes(x = age, y=model4$fitted.values), color="red", lwd=2)
+```
+
+### 3.Calculate the residuals from the simple linear regression
+
+**Calculate the residuals from the simple linear regression above and plot them versus age. Add a smooth function using lowess smoothing.**
+
+Residuals = observed y – (3.67 + 0.33*age). We observe a curve-linear relationship in the residual analysis, which suggests that the assumption of linearity does not hold.
+
+```{r}
+# calculate residuals from SLR with loess smoother
+qplot(y=model4$residuals, x=jitter(age), data=nepalData, ylab="Residuals",
+      xlab="Age in months") +
+  geom_smooth(method="loess", se=FALSE) + #loess smoother
+  geom_hline(yintercept=0, color="red") #horizontal y=0 line
+```
+
+### 4. Use linear regression to regress weight onto the monthly mean ages
+
+```{r}
+# Use linear regression to regress weight onto the monthly mean ages.
+model5 = lm(weight ~ as.factor(age), data=nepalData)
+summary(model5)
+confint(model5)
+```
+
+### 5. Create linear splines
+
+Let our linear spline regression model : E(weight) = b0 + b1 X + b2 (X – knot1)+ + b3 (X – knot2)+ + b4 (X – knot3)+ + e
+
+1)	b0 : the mean weight when age 0. 
+2)	b1, coefficients for age: change in mean weight per month when age <= sp1
+3)	b2, coefficients for age_sp1: difference in the slope for ‘age <= sp1’ versus ‘sp1 < age <= sp2’
+4)	b3, coefficients for age_sp2: difference in the slope for ‘sp1 < age <= sp2’ versus ‘sp2 < age <= sp3’
+5)	b4, coefficients for age_sp3: difference in the slope for ‘sp2 < age <= sp3’ versus ‘sp3 < age’
+
+```{r}
+# Create three new variables:
+nepalData = nepalData %>%
+  mutate(age_sp1 = ifelse(age > 2, age-2, 0)) %>%
+  mutate(age_sp2 = ifelse(age > 4, age-4, 0)) %>%
+  mutate(age_sp3 = ifelse(age > 6, age-6, 0))
+
+#Regress weight on age, age_sp1, age_sp2 and age_sp3.
+model6 = lm(weight ~ age + age_sp1 + age_sp2 + age_sp3, data=nepalData)
+summary(model6)
+confint(model6)
+
+# Get the predicted values from this regression
+qplot(x=jitter(age), y=weight, data=nepalData, xlab="Age in months",
+      ylab="Weight in kg", ylim=c(0,12)) +
+  geom_line(aes(x = age, y=model6$fitted.values), color="red", lwd=2)
+```
+
+### 6. Test the linear relationship against the alternative defined by the linear spline fit by using F-test.
+
+**Use an F-test with 3 degrees of freedom in the numerator to test the null hypothesis of a linear relationship against the alternative defined by the linear spline fit in the steps above.**
+
+The null hypothesis of F-test is ‘H0: b2 = b3 = b4’. According to the result of the test, we can reject the null hypothesis and conclude there is statistically significant difference in the slope of each age strata (Fobs = 45.984).
+
+To address the question of whether the difference in growth rate per month is changed as the age increasing, we added splines in the original linear regression model. The result of the F test indicates that there is statistically significant difference in the slopes between the age strata. By adding splines in the original linear regression model, we can get more improved fitted model. 
+
+### 7. Comment on the quality of each of the 3 models using the plots
+
+Based on the AIC, linear splines model (Model 6) has the lowest AIC that approacimates the lowest predicted residual sum of square(PRESS) following by model with monthly means (Model 5) and linear model (Model 4). We can find the Model 5 has the lowest residual variance among three models. As a result, we can use linear splines model or model with monthly means to predict the mean of weight precisely, and conclude that the growth rate (the change in mean of weight per unit change in age) decreases. When the model has smaller AIC and smaller residual variance (residual mean squares), the quality of model increases. 
+
+```{r}
+#Use an F-test with 3 degrees of freedom in the numerator to test the null hypothesis 
+anova(model4, model6)
+
+anova(model4)
+anova(model5)
+anova(model6)
+
+#using glm commend, make the models again.
+model4_glm <- glm(weight ~ age, data = nepalData, family = gaussian)
+log_likelihood_model4 <- logLik(model4_glm)
+log_likelihood_model4
+
+model5_glm <- glm(weight ~ as.factor(age), data = nepalData, family = gaussian)
+log_likelihood_model5 <- logLik(model5_glm)
+log_likelihood_model5
+
+model6_glm <- glm(weight ~ age + age_sp1 + age_sp2 + age_sp3, data = nepalData, family = gaussian)
+log_likelihood_model6 <- logLik(model6_glm)
+log_likelihood_model6
+
+##8
+AIC(model4, model5, model6)
+AIC(model4_glm, model5_glm, model6_glm)
+
+```

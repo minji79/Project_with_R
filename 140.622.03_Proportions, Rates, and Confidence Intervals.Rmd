@@ -1,0 +1,223 @@
+---
+title: "140.622.03_Proportions, Rates, and Confidence Intervals"
+output: html_document
+date: "2023-12-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part 1. Intent-to-Treat Analysis of Efficacy and Confidence Intervals
+
+### 1. Create a table that displays the numbers of deaths and numbers of survivors for the vitamin A and control groups separately for the six age-by-sex strata.
+
+**Include totals across all strata and percentages so that the reader of your table can see the evidence for whether or not vitamin A is beneficial. Ignoring age and sex for the moment, estimate the proportion of children who died in the vitamin A group and in the control group and estimate the difference in mortality rates between the two groups.**
+
+```{r}
+# import data
+library(tidyverse)
+nepal621 = read_csv("nepal621_v2.csv")
+
+# Create a table that displays the numbers of deaths and numbers of survivors for the vitamin A and control groups separately for the six age-by-sex strata.
+nepal621 %>%
+  group_by(trt, sex, age) %>%
+  summarize(N_Alive = sum(status=="Alive"),
+            Perc_Alive = N_Alive/n(),
+            N_Died = sum(status=="Died"),
+            Perc_Died = N_Died/n(),
+            Total=n())
+
+## adj % (Make it a little prettier!)
+nepal621 %>%
+  group_by(trt, sex, age) %>%
+  summarize(N_Alive = sum(status=="Alive"),
+            Perc_Alive = round(N_Alive/n(),4)*100,
+            N_Died = sum(status=="Died"),
+            Perc_Died = round(N_Died/n(),4)*100,
+            Total=n())
+
+# (Ignoring age and sex for the moment) estimate the proportion of children who died in the vitamin A group and in the control group and estimate the difference in mortality rates between the two groups.
+nepal621 %>%
+  group_by(trt) %>%
+  summarize(N_Alive = sum(status=="Alive"),
+            Perc_Alive = round(N_Alive/n(),4)*100,
+            N_Died = sum(status=="Died"),
+            Perc_Died = round(N_Died/n(),4)*100,
+            Total=n())
+
+# Calculate a 95% confidence interval for each true mortality rate.
+nepal621 %>%
+  group_by(trt) %>%
+  summarize(N_Alive = sum(status=="Alive"),
+            p_Alive = N_Alive/n(),
+            N_Died = sum(status=="Died"),
+            p_Died = N_Died/n(),
+            Total=n(),
+            se_Died = sqrt(p_Died *(1-p_Died)/Total),
+            CI_L = p_Died - 1.96*se_Died,
+            CI_U = p_Died + 1.96*se_Died)
+
+# By hand, calculate a 95% confidence interval for the true difference in mortality rates by treatment. Confirm using R.
+p.1 = 290/13389 # fill in sample proportion for first sample
+n.1 = 13389 # fill in sample size for first sample
+p.2 = 233/13732 # fill in sample proportion for second sample
+n.2 = 13732 # fill in sample size for second sample
+
+diff = p.1 - p.2
+se = sqrt(p.1*(1-p.1)/n.1 + p.2*(1-p.2)/n.2)       # standard error
+diff - 1.96*se; diff + 1.96*se   # confidence interval
+
+```
+
+### 2. Calculate a 95% confidence interval for the difference in mortality rates for the vitamin A and control groups separately for each age-sex stratum
+
+I displayed the confidence intervals for the six strata and for the overall groups (Table A) on the following graph. We can find the expected difference in mortality rate for the vitamin A and control groups, and it’s confidence interval for each stratum. We can find larger confidence intervals for those aged 3-4 year, which was due to smaller sample size of the age 3-4 group compared with the others.
+
+```{r}
+# 95% CI for the difference in mortality rates for the vitamin A and control groups separately for each age-sex stratum.
+nepal621 %>%
+  group_by(sex, age, trt) %>%
+  summarize(N_Died = sum(status=="Died"),
+            p_Died = N_Died/n(),
+            Total = n())
+
+## alternatively, calculate the CIs directly within each age/sex strata
+nepal621 %>%
+  group_by(sex, age) %>%
+  summarize(N_Plac = sum(trt=="Placebo"),
+            p_Plac = sum(status=="Died" & trt=="Placebo")/N_Plac,
+            N_VitA = sum(trt=="Vit A"),
+            p_VitA = sum(status=="Died" & trt=="Vit A")/N_VitA,
+            diff = p_Plac - p_VitA,
+            se = sqrt(p_Plac*(1 - p_Plac)/N_Plac + p_VitA*(1 - p_VitA)/N_VitA),
+            CI_L = diff - 1.96*se,
+            CI_U = diff + 1.96*se)
+
+```
+
+### 3. Display the confidence intervals for the six strata and for the overall groups (from step iii) on a graph 
+
+```{r}
+# draw the graph for the above 95% ci
+#utils::install.packages("Hmisc")
+library(Hmisc)
+library(dplyr)
+
+dataForCIplot = nepal621 %>%
+  group_by(sex, age) %>%
+  dplyr::summarize(N_Plac = sum(trt=="Placebo"),
+            p_Plac = sum(status=="Died" & trt=="Placebo")/N_Plac,
+            N_VitA = sum(trt=="Vit A"),
+            p_VitA = sum(status=="Died" & trt=="Vit A")/N_VitA,
+            diff = p_Plac - p_VitA,
+            se = sqrt(p_Plac*(1 - p_Plac)/N_Plac + p_VitA*(1 - p_VitA)/N_VitA),
+            CI_L = diff - 1.96*se,
+            CI_U = diff + 1.96*se)
+
+agestrata = c(1,2,3,4,5,6,7)
+agestrata_labels = c("F < 1", "F 1-2", "F 3-4", "M < 1", "M 1-2", "M 3-4", "Overall")
+diff = c(dataForCIplot$diff, 0.0047)
+LL = c(dataForCIplot$CI_L, 0.00142)
+UL = c(dataForCIplot$CI_U, 0.00798)
+
+## Add labels to the axes
+errbar(x = agestrata,
+       y = diff,
+       yplus = LL,
+       yminus = UL,
+       xaxt = "n",     #xaxt removes the numberic lables
+       xlab = "Age/Gender Group",  #label for x-axis
+       ylab = "Difference in Mortality Rates (Placebo - VitA)")  #label for y-axis()
+
+## Add a title
+title(main="95% Confidence Intervals for Difference in Mortality Rates")
+
+## Add group labels for the age-gender groups
+axis(side=1, #1 = the bottom of graph
+     at=agestrata,   #where on x-axis; same as "x" in errbar
+     labels=agestrata_labels)  #what the labels are
+
+# Add horizontal line at zero
+abline(h=0, col="red")
+```
+
+### 4. linear regression model
+
+1)	β0 : the risk of death in the placebo group. 
+2)	β0 + β1 : the risk of death in the vitamin A group.
+3)	β1 : the difference in risk between vitamin A and placebo groups.
+4)	When comparing to the estimates of the following key parameters from R output with what I obtained from the above parts 3 and 4, I can find the β0, the coefficient for placebo, is same as the estimated β0 from our data as 290/13389 = 0.0217, which is P(Y=1| placebo) =  β0 + β1(0). In addition, the β1, the coefficient for vitamin A, is same as the estimated β1 with subtracting the two proportions from our data, which is P(Y=1| vitamin A) - P(Y=1| placebo) = {β0 + β1(1)} –{β0 + β1(0)}.
+
+### 5. Explain in a brief sentence that estimated difference in mortality rates with an expression of uncertainty in this estimate for all children.
+
+Vitamin A supplementation is associated with large reductions in mortality in children. Our results indicate statistically significant decrease in the mortality rates for the vitamin A group compared with that of the control group in overall children (risk difference = 0.0047,  95% CI = (0.00798, 0.00142)). When comparing with each age-gender strata, we can find vitamine A supplementation significantly decreases the mortality rate in only girls aged under 1 year and boys aged 1-2 year. Several factors such as risk of bias in study design, small sample size, and risk of measurement error can contribute to increase uncertainty in our estimated values.
+
+```{r}
+# linear regression
+model1 = glm(as.factor(status) ~ trt, data=nepal621, family=binomial(link="identity"))
+summary(model1)
+confint(model1)
+```
+
+## Part 2. Vitamin A Supplementation to Prevent Children’s Mortality in Nepal 
+
+### 6. With binary outcome(< 3 years, ≥ 3 years), Estimate the odds ratio with a 95% confidence interval for vitamin A exposure by vital status within each age stratum.
+
+Based on the following logistic regression, there are statistically significant difference in the log odds between vitamin A and placedo group in both age strata. 
+
+Among children aged more than 3 years, I can estimate the odds of death is statistically significantly reduced by 48% in children who have vitamin A (OR = 0.523, 95%CI = (0.328, 0.835)). With the confidence intervals excluding the null value, I can reject the null hypothesis that vitamin A is not effective for the age group. Among children aged less than 3 years, I can estimate the odds of death is reduced by 18% in children who have vitamin A (OR = 0.826, 95%CI = (0.684, 0.998)). I can also reject the null hypothesis with the confidence intervals.
+
+Among children aged more than 3 years, the odds of death is statistically significantly reduced by 48% in children who have vitamin A compared with those without vitamin A (OR = 0.523, 95%CI = (0.328, 0.835)). Among children aged less than 3 years, the odds of death statistically significantly decrease by 18% in children who have vitamin A compared with the control group (OR = 0.826, 95%CI = (0.684, 0.998)). As a result, vitamin A supplementation is associated with reductions in mortality in children.
+
+```{r}
+# import dataset
+library(tidyverse)
+nepal621 = read_csv("nepal621.csv")
+
+# Create two age groups (< 3 years, ≥ 3 years)
+nepal621 = nepal621 %>%
+  mutate(agegp = ifelse(age == "3-4", "3+ years", "<3 years"))
+
+# Calculates the odds by age group and trt:
+nepal621 %>%
+  group_by(agegp, trt) %>%
+  dplyr::summarize(N_Alive = sum(status=="Alive"),
+            N_Died = sum(status=="Died"),
+            Odds = N_Died/N_Alive)
+
+nepal621 %>%
+  group_by(agegp) %>%
+  dplyr::summarize(N_Alive_P = sum(status=="Alive" & trt=="Placebo"),
+            N_Died_P = sum(status=="Died" & trt=="Placebo"),
+            N_Alive_V = sum(status=="Alive" & trt=="Vit A"),
+            N_Died_V = sum(status=="Died" & trt=="Vit A"),
+            OR = (N_Died_V/N_Alive_V)/(N_Died_P/N_Alive_P),
+            se = sqrt(1/N_Alive_P + 1/N_Died_P + 1/N_Alive_V + 1/N_Died_V),
+            CI_L = exp(log(OR)-1.96*se),
+            CI_U = exp(log(OR)+1.96*se))
+```
+
+### 7. estimate the odds ratio by using a logistic regression of the binary
+
+Now separately for each age stratum, estimate the odds ratio by using a logistic regression of the binary survival indicator on vitamin A.
+
+```{r}
+# seperately for each age startum, estimate the odds ratio by using a logistic regression of the binary survival indicator
+nepal621.lowage = nepal621 %>% filter(agegp == "<3 years")
+model2 = glm(as.factor(status) ~ trt, data=nepal621.lowage,
+             family=binomial(link="logit"))
+
+summary(model2)  # This summary is on the logOR scale
+exp(model2$coefficients)  # We exponentiate to get on the OR scale
+exp(confint(model2))  # We can also exponentiate the CI to the OR scale
+
+nepal621.highage = nepal621 %>% filter(agegp == "3+ years")
+model3 = glm(as.factor(status) ~ trt, data=nepal621.highage,
+             family=binomial(link="logit"))
+
+summary(model3)
+exp(model3$coefficients)
+exp(confint(model3))
+```
+

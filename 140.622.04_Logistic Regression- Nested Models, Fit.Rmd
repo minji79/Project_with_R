@@ -1,0 +1,117 @@
+---
+title: '140.622.04_Logistic Regression: Nested Models, Fit'
+output: html_document
+date: "2023-12-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Explore data by using boxplots table
+
+The following boxplots show the distribution of the breastfeeding status in the age of child, the age of mother, and parity. 
+
+According to the boxplots, children received breast feeding have lower age than those who do not receive breast feeding. We can see the large difference in age distribution between two genders. The 1st qualtile of the age of non-breast feeding children is higher than the 3rd qualtile of that of breast feeding children. The age of mothers who provide breastfeeding to their child is younger than that of mothers who do not. The mean of parity is similar regardless of the breastfeeding status. The prevalence of breastfeeding is 40.87% in boys and 41.82% in girls.
+
+```{r}
+# import dataset and check the missing value
+library(tidyverse)
+nepalibf = read_csv("nepalibf.csv")
+head(nepalibf)
+summary(nepalibf)
+table(nepalibf$bf)
+
+# Compare boxplots for the continuous covariates (X’s) vs breastfeeding status
+boxplot(age_chld ~ bf, data=nepalibf, ylab="Age of child (months)")
+boxplot(age_mom ~ bf, data=nepalibf)
+boxplot(parity ~ bf, data=nepalibf)
+
+# Tabulate the proportion breastfed by gender:
+CT = xtabs(~ sex_chld + bf, data=nepalibf)
+addmargins(CT)
+prop.table(CT, margin=1)
+addmargins(prop.table(CT, margin=1), margin=2)
+```
+
+### 2. Estimate the prevalence of breast feeding as a function of child’s age (centered at the mean age) and gender using logistic regression
+
+Definition of the variables
+
+1. Variable ‘sex_chld’ is a child’s gender: 0=male, 1=female,
+2. Variable ‘agechldc’ is a age of child in month,
+3. The logistic regression model is as following: Log(p/(1-p)) = - 0.9197 - 0.3111*sex_chld – 0.1868*agechldc
+
+Interpretation of the coefficients 
+
+1. β0 (- 0.9197) : the log odds of breast feeding for new born boys. e^ β0 is the odds of breast feeding among new born boys.
+2. β1 (- 0.3111) : the log odds ratio(=differnce in the log odds) of breast feeding comparing new born girls to new born boys. e^ β1 is the odds ratio of breast feeding comparing new born girls to new born boys.
+3. β2 (- 0.1868) : the log odds ratio(=differnce in the log odds) of breast feeding for each month in age, for boys. e^ β1 is the odds ratio of breast feeding for each month in age, among boys.
+
+
+```{r}
+# centered at the mean age
+nepalibf = nepalibf %>%
+  mutate(agechldc = age_chld - mean(age_chld))
+
+# make a logistic regression 
+model1 = glm(bf ~ sex_chld + agechldc, data=nepalibf,family=binomial(link="logit"))
+
+summary(model1)
+exp(model1$coefficients)
+exp(confint.default(model1))
+```
+
+### 3. Test the hypothesis that the association of breast feeding prevalence and child’s age is different for boys and girls using interaction model.
+
+Based on the Z-test result for the interaction coefficient of agechldc:sex_chld, we fail to reject the null hypothesis that the interaction coefficient is equal to zero with the p-value, 0.314. It can be the weak evidence of a different age-prevalence relationship for boys and girls, indicating that sex is not a effect measure modifier of the association between breastfeeding and gender.
+
+Interpretation of the coefficients 
+
+1. β0 (- 0.8546) : the log odds of breast feeding for new born boys. e^ β0 is the odds of breast feeding among new born boys.
+2. β1 (- 0.1718) : the log odds ratio(=differnce in the log odds) of breast feeding for each 1 month in age for boys. e^ β1 is the odds ratio of breast feeding for each 1 month in age among boys.
+3. β2 (- 0.5215) : the log odds ratio(=differnce in the log odds) of breast feeding in infant between girls and boys. e^ β2 is the odds ratio of breast feeding in infant between girls and boys.
+4. β3 (- 0.0372) : the difference in log odds ratio of beast feeding for 1 month in age between girls and boys. e^ β3 is exponential of the log odds ratio of breast feeding in infant between girls and boys.
+
+```{r}
+# use interaction model
+modelE = glm(bf~agechldc+sex_chld+sex_chld:agechldc, data=nepalibf, family=binomial(link="logit"))
+summary(modelE)
+```
+
+### 4. Display a graph of the estimated breast feeding prevalence -vs- child’s age with separate curves for boys and girls.
+
+Both gender have the highest breastfeeding prevalence, 100%, at their birth. However, males have the higher breastfeeding prevalence than females in most of follow-up period from birth to 5 years old. The breastfeeding prevalence of males is 0-0.25% higher than that of females.
+
+```{r}
+# separate data for boys and girls
+nepalibf = nepalibf %>%
+  na.omit() %>%  # Remove observations with missing data
+  mutate(sex_chld=recode_factor(sex_chld, `0`="Male", `1`="Female")) # Factor sex_chld
+
+# make a logistic regression model
+modelD = glm(bf ~ sex_chld + age_chld, data=nepalibf, family=binomial(link="logit"))
+nepalibf = nepalibf %>% mutate(phat = predict(modelD, type="response"))
+
+# draw a graph of the estimated breast feeding prevalence -vs- child’s age with separate curves for boys and girls.
+qplot(x=age_chld, y=phat, color=sex_chld, shape=sex_chld, data=nepalibf,
+      xlab="Child's age in months", ylab="Predicted prevalence of Breast-feeding")
+```
+
+### 5. Hosmer-Lemeshow goodness-of-fit test 
+
+The result of the Hosmer-Lemeshow test shows the evidence of a good fit of model. With the large p-value, 0.6405, we fail to reject the null hypothesis that model accrately characterizes the data distribution. 
+
+We conducted a cross-sectional study in order to figure out the potential risk factors for the breastfeeding. The observed prevalence of breastfeeding is 40.87% in boys and 41.82% in girls. The younger the age of child and mother, and the less parity decrease the breastfeeding prevalence [Figure 1]. The age of child is statistically significant associated with the breastfeeding, adjusting for gender (Odds Ratio(OR) = 0.83, 95% CI (0.80 - 0.85)). However, there is no siginificant association between child;s gender and the breastfeeding status (OR = 0.73, 95% CI (0.39 – 1.36)). Furthermore, the gender is not a potential effect measure modifier (p value for the interaction term = 0.314). We can see the drastic drop of breastfeeding prevalence in children aged more than 20 months and less than 12% of children receive breastfeeding after their age 40 months [Figure 2]. According to the Hosmer-Lemeshow test, our multiple logistic regression model has a good fit with the observed values (p-value = 0.6405).
+
+```{r}
+#utils::install.packages("ResourceSelection")
+library(ResourceSelection)
+
+#Hosmer-Lemeshow goodness-of- fit test 
+hoslem.test(nepalibf$bf, nepalibf$phat, g=10)
+hoslem.test(nepalibf$bf, nepalibf$phat)$observed
+hoslem.test(nepalibf$bf, nepalibf$phat)$expected
+```
+
+
