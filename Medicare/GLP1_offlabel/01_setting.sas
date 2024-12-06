@@ -16,4 +16,8 @@ rstudio
 
 libname mj "/users/59883/c-mkim255-59883/minji";
 
-libname input "cms01/data/dua/59883/"
+libname input "/cms01/data/dua/59883/part_d_pde/2020/SAS/"
+
+proc print data=tx.procedure (obs=40);
+    title "tx.procedure";
+run;
