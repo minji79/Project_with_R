@@ -28,7 +28,11 @@ libname pde19 "/cms01/data/dua/59883/part_d_pde/2019/SAS";
 libname pde20 "/cms01/data/dua/59883/part_d_pde/2020/SAS";
 
 /* part_d_formulary */
-libname formulary16 "/cms01/data/dua/59883/part_d_formulary/2016/SAS";
+libname form16 "/cms01/data/dua/59883/part_d_formulary/2016/SAS";
+libname form17 "/cms01/data/dua/59883/part_d_formulary/2017/SAS";
+libname form18 "/cms01/data/dua/59883/part_d_formulary/2018/SAS";
+libname form19 "/cms01/data/dua/59883/part_d_formulary/2019/SAS";
+libname form20 "/cms01/data/dua/59883/part_d_formulary/2020/SAS";
 
 /*This is stacking all 6 years of traditional medicare inpatient files and save to my personal folder*/
 
@@ -39,6 +43,49 @@ set pde16.pde_file_2016
     pde19.pde_file_2019
     pde20.pde_file_2020;
 run;
+
+/* read the pde file */
+proc print data=pde20.pde_file_2020 (obs=30);
+    title "pde_file_2020";
+run;                      
+proc contents data=pde20.pde_file_2020;
+    title "pde_file_2020";
+run;  
+
+/* read the formulary file */
+* formulary_2020.sas7bdat ;
+proc print data=form20.formulary_2020 (obs=30);
+    title "formulary_2020";
+run;                      
+proc contents data=form20.formulary_2020;
+    title "formulary_2020";
+run; 
+
+* excl_drugs_2020.sas7bdat ;
+proc print data=form20.excl_drugs_2020 (obs=30);
+    title "excl_drugs_2020";
+run;                      
+proc contents data=form20.excl_drugs_2020;
+    title "excl_drugs_2020";
+run; 
+
+* ibc_2020.sas7bdat;
+proc print data = form20.ibc_2020 (obs=30);
+    title "ibc_2020";
+run;                 
+proc contents data=form20.ibc_2020;
+    title "ibc_2020";
+run;
+
+* otc_drugs_2020.sas7bdat;
+proc print data = form20.otc_drugs_2020 (obs=30);
+    title "otc_drugs_2020";
+run;                 
+proc contents data=form20.otc_drugs_2020;
+    title "otc_drugs_2020";
+run;
+
+
 
 
 
