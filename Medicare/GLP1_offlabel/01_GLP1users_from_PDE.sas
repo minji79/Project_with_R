@@ -187,6 +187,12 @@ proc freq data = input.glp1users_beneid_17to20_ma;
  	title "ma_status_17to20";
 run;
 
+
+/*
+MA subsidiaries = 1 | n = 45,939
+MA subsidiaries = 0 | n = 
+*/
+
 /************************************************************************************
 	3.    Add MA subsidiaries variable to PDE files for glp1 users
 ************************************************************************************/
