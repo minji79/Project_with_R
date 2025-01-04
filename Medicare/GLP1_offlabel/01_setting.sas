@@ -17,6 +17,10 @@ rstudio
 /********************************************************************************************************************************************************/
 setwd("/cms01/data/dua/59883/part_d_pde/2020/SAS")
 
+/************************************************************************************
+	1. Set library
+************************************************************************************/
+
 /* input file */
 libname input "/users/59883/c-mkim255-59883/glp1off/sas_input";
 
@@ -34,6 +38,11 @@ libname form18 "/cms01/data/dua/59883/part_d_formulary/2018/SAS";
 libname form19 "/cms01/data/dua/59883/part_d_formulary/2019/SAS";
 libname form20 "/cms01/data/dua/59883/part_d_formulary/2020/SAS";
 
+
+/************************************************************************************
+	2. Stack datasets
+************************************************************************************/
+
 /*This is stacking all 6 years of traditional medicare inpatient files and save to my personal folder*/
 
 data input.pde_16to20 (compress=yes);
@@ -44,13 +53,7 @@ set pde16.pde_file_2016
     pde20.pde_file_2020;
 run;
 
-/* read the pde file */
-proc print data=pde20.pde_file_2020 (obs=30);
-    title "pde_file_2020";
-run;                      
-proc contents data=pde20.pde_file_2020;
-    title "pde_file_2020";
-run;  
+ 
 
 /* read the formulary file */
 * formulary_2020.sas7bdat ;
