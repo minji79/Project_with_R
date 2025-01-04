@@ -1,6 +1,6 @@
 
 /************************************************************************************
-| Project name : identify GLP1 users
+| Project name : identify GLP1 users with MA status indicators
 | Task Purpose : 
 |      1. GLP1 new users from 2018 - 2020 (n = 69,115)
 |      2. Identify MA subsidiaries (n = 45,939)
