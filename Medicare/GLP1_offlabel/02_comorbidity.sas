@@ -6,13 +6,13 @@
 |      2. Identify cormorbidity (acute myocardial infarction, heart failure, hypertension, stroke, Alzheimer’s) among GLP1 users
 |      3. Add diabetes & cormorbidity variable to PDE files for glp1 users
 | Final dataset : 
-|	        input.glp1users_pde_17to20_v01 (with diabetes & cormorbidity indicators)
+|	  input.glp1users_pde_17to20_v01 (with diabetes & cormorbidity indicators)
 |         input.glp1users_beneid_17to20_cc
 ************************************************************************************/
 
 /************************************************************************************
 	1.    identify diabetes patient among GLP1 users (n = 44,239)
-  2.    identify cormorbidity (acute myocardial infarction, heart failure, hypertension, stroke, Alzheimer’s) among GLP1 users
+ 	2.    identify cormorbidity (acute myocardial infarction, heart failure, hypertension, stroke, Alzheimer’s) among GLP1 users
 ************************************************************************************/
 
 * 0. read the mbsf file;                   
