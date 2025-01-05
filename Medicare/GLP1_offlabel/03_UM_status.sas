@@ -17,7 +17,7 @@
 * description: add UM status for each row
 **************************************************/
 
-* 0. read the formularity file;                   
+* 0. read the formulary file;                   
 proc contents data=form20.formulary_2020;
     title "formulary_2020";    
 run; 
@@ -28,7 +28,7 @@ data input.glp1users_pde_17to20_v01;
 	SRVC_DT_year = year(SRVC_DT);
 run;
 
-* 2. select UM indicators from formularity file for each year;
+* 2. select UM indicators from formulary file for each year;
 /* 2020 */
 proc sql;
 	create table glp1users_pde_17to20_2020 as
