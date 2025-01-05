@@ -30,3 +30,15 @@ proc means data=input.glp1users_pde_17to20_v04 n nmiss mean std;
   var age;
   title "age";
 run;
+
+
+/************************************************************************************
+	2.   Race
+************************************************************************************/
+
+proc sql;
+  create table input.glp1users_pde_17to20_v04 as
+  select distinct a.*, b.BENE_RACE_CD 
+  from input.glp1users_pde_17to20_v04 as a left join mbsf20.mbsf_abcd_summary_2020 as b
+  on a.BENE_ID = b.BENE_ID;
+quit;
