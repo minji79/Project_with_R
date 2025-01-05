@@ -9,6 +9,7 @@
 |      5. Add offlabel_df1 - offlabel_df4 indicators for the glp1 users
 |      6. Add index_date for the glp1 users
 | Final dataset : 
+|       input.glp1users_pde_17to20_v03
 |       input.offlabel_v04
 |       input.glp1users_beneid_17to20 (add index_date)
 |       input.glp1users_all_medhis_16to20
