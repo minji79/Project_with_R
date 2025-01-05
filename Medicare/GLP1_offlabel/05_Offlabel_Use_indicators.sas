@@ -288,9 +288,9 @@ data input.offlabel_v04;
   set input.offlabel_v04;
   if offlabel_df4_pre = 1 and offlabel_df3 = 1 then offlabel_df4 = 1;
   else offlabel_df4 = 0;
-  drop offlabel_df4_pre;
 run;
 
+proc freq data=input.offlabel_v04; table offlabel_df4_pre; title "offlabel_df4"; run;
 proc freq data=input.offlabel_v04; table offlabel_df4; title "offlabel_df4"; run;
 
 * 3. delete dataset;
