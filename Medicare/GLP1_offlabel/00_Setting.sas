@@ -61,7 +61,12 @@ libname pres18 "/cms01/data/dua/59883/part_d_prescriber/2018/SAS";
 libname pres19 "/cms01/data/dua/59883/part_d_prescriber/2019/SAS";
 libname pres20 "/cms01/data/dua/59883/part_d_prescriber/2020/SAS";
 
-/* ma_carrier : 16-19 */
+/* 
+ma_carrier : 16-19 
+bene_ff_2019
+carrier_base_enc_2019
+carrier_line_enc_2019
+*/
 libname ma_ca16 "/cms01/data/dua/59883/ma_carrier/2016/SAS";
 libname ma_ca17 "/cms01/data/dua/59883/ma_carrier/2017/SAS";
 libname ma_ca18 "/cms01/data/dua/59883/ma_carrier/2018/SAS";
