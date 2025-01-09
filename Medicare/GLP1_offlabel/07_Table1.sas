@@ -8,7 +8,7 @@
 ************************************************************************************/
 
 /************************************************************************************
-	0.    Among GLP1 new users from 2018 - 2020 (n = 69,115)
+	0.    Only remain the first fill among GLP1 new users's records from 2018 - 2020 (n = 69,115)
 ************************************************************************************/
 
 * input.glp1users_pde_17to20_v04;
@@ -21,7 +21,37 @@ data input.studypop;
   set input.glp1users_pde_17to20_v04;
   by BENE_ID;
   if first.BENE_ID;
-run;       
+run;     
+
+/************************************************************************************
+	1.    Plan distribution
+************************************************************************************/
+
+* 1. MA distribution;
+proc freq data=input.studypop;
+  table ma_status_17to20*offlabel_df4 / norow nopercent nocum chisq;
+  title "ma_status";
+run;
+
+* 2. TIER distribution;
+proc freq data=input.studypop;
+  table TIER_ID*offlabel_df4 / norow nopercent nocum chisq;
+  title "TIER_ID";
+run;
+
+* 2. TIER*plan distribution;
+data tier1; set input.studypop; if TIER_ID = 1; run; /* 1298 */
+data tier2; set input.studypop; if TIER_ID = 2; run; /* 3168 */
+data tier3; set input.studypop; if TIER_ID = 3; run; /* 58055 */
+  
+proc freq data=tier3;
+  table PRIOR_AUTHORIZATION_num*offlabel_df4 / norow nopercent nocum chisq;
+  title "Prior Authorization at tier3";
+run;
+proc freq data=tier3;
+  table STEP_num*offlabel_df4 / norow nopercent nocum chisq;
+  title "STEP at tier3";
+run;
 
 /************************************************************************************
 	1.    GLP-1 Brand 
