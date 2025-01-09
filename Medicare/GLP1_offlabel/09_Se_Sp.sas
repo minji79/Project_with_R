@@ -3,7 +3,7 @@
 | Project name : 
 | Task Purpose : 
 |      1. Goldstandard
-|      2. Identified using only pde - use certain drug ar any time
+|      2. Identify using only pde - at any time
 |      3. Calculate Se and Sp
 | Final dataset : 
 |       input.sesp
