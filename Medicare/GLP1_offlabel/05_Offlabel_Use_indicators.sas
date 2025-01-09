@@ -54,7 +54,7 @@ quit; /* 69115 obs */
 
 proc sql;
     create table &data as
-    select distinct a.*, b.SRVC_DT, b.GNN
+    select distinct a.*, b.SRVC_DT, b.GNN, b.BN
     from input.glp1users_beneid_17to20 as a 
     left join &refer as b
     on a.BENE_ID = b.BENE_ID;
