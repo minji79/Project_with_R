@@ -57,10 +57,10 @@ libname form20 "/cms01/data/dua/59883/part_d_formulary/2020/SAS";
 /* part_d_plan 
 	tier_2020
  	service_area_2020
-	 plan_char_2020
-	 plan_crosswalk_2020
-	 snp_contract_info_2020
-	 premium_2020
+	plan_char_2020
+	plan_crosswalk_2020
+	snp_contract_info_2020
+	premium_2020
 */
 libname plan16 "/cms01/data/dua/59883/part_d_plan/2016/SAS";
 libname plan17 "/cms01/data/dua/59883/part_d_plan/2017/SAS";
@@ -75,8 +75,7 @@ libname pres18 "/cms01/data/dua/59883/part_d_prescriber/2018/SAS";
 libname pres19 "/cms01/data/dua/59883/part_d_prescriber/2019/SAS";
 libname pres20 "/cms01/data/dua/59883/part_d_prescriber/2020/SAS";
 
-/* 
-ma_carrier : 16-19 
+/* ma_carrier : 16-19 
 	bene_ff_2019
 	carrier_base_enc_2019
 	carrier_line_enc_2019
@@ -92,7 +91,14 @@ libname ma_hha17 "/cms01/data/dua/59883/ma_hha/2017/SAS";
 libname ma_hha18 "/cms01/data/dua/59883/ma_hha/2018/SAS";
 libname ma_hha19 "/cms01/data/dua/59883/ma_hha/2019/SAS";
 
-/* ma_ip */
+/* ma_ip 
+	ip_base_enc_2019
+ 	ip_revenue_enc_2019
+  	ip_condition_codes_enc_2019
+  	ip_span_codes_enc_2019
+   	ip_occurrnce_codes_enc_2019
+  	ip_value_codes_enc_2019
+*/
 libname ma_ip16 "/cms01/data/dua/59883/ma_ip/2016/SAS";
 libname ma_ip17 "/cms01/data/dua/59883/ma_ip/2017/SAS";
 libname ma_ip18 "/cms01/data/dua/59883/ma_ip/2018/SAS";
