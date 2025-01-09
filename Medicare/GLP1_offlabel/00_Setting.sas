@@ -24,7 +24,12 @@ setwd("/cms01/data/dua/59883/part_d_pde/2020/SAS")
 /* input file */
 libname input "/users/59883/c-mkim255-59883/glp1off/sas_input";
 
-/* MBSF */
+/* MBSF 
+	mbsf_abcd_summary_2020
+ 	mbsf_chronic_summary_2020
+  	mbsf_cc_summary_2020
+   	mbsf_costuse_2020
+*/
 libname mbsf16 "/cms01/data/dua/59883/mbsf/2016/SAS";
 libname mbsf17 "/cms01/data/dua/59883/mbsf/2017/SAS";
 libname mbsf18 "/cms01/data/dua/59883/mbsf/2018/SAS";
@@ -45,9 +50,18 @@ libname form18 "/cms01/data/dua/59883/part_d_formulary/2018/SAS";
 libname form19 "/cms01/data/dua/59883/part_d_formulary/2019/SAS";
 libname form20 "/cms01/data/dua/59883/part_d_formulary/2020/SAS";
 
-/* part_d_pharmacy */
+/* part_d_pharmacy 
+	pharm_char_2020
+*/
 
-/* part_d_plan */
+/* part_d_plan 
+	tier_2020
+ 	service_area_2020
+	 plan_char_2020
+	 plan_crosswalk_2020
+	 snp_contract_info_2020
+	 premium_2020
+*/
 libname plan16 "/cms01/data/dua/59883/part_d_plan/2016/SAS";
 libname plan17 "/cms01/data/dua/59883/part_d_plan/2017/SAS";
 libname plan18 "/cms01/data/dua/59883/part_d_plan/2018/SAS";
@@ -63,9 +77,9 @@ libname pres20 "/cms01/data/dua/59883/part_d_prescriber/2020/SAS";
 
 /* 
 ma_carrier : 16-19 
-bene_ff_2019
-carrier_base_enc_2019
-carrier_line_enc_2019
+	bene_ff_2019
+	carrier_base_enc_2019
+	carrier_line_enc_2019
 */
 libname ma_ca16 "/cms01/data/dua/59883/ma_carrier/2016/SAS";
 libname ma_ca17 "/cms01/data/dua/59883/ma_carrier/2017/SAS";
