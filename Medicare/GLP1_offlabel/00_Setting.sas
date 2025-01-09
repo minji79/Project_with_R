@@ -13,9 +13,7 @@ csas -WORK /tmp/
 module load R
 module load rstudio
 rstudio
-
-/********************************************************************************************************************************************************/
-setwd("/cms01/data/dua/59883/part_d_pde/2020/SAS")
+* setwd("/cms01/data/dua/59883/part_d_pde/2020/SAS");
 
 /************************************************************************************
 	1. Set library
@@ -157,7 +155,7 @@ libname tm_op21 "/cms01/data/dua/59883/tm_op/2021/SAS";
 
 
 /************************************************************************************
-	2. Stack datasets
+	2. Stack datasets - too large..
 ************************************************************************************/
 
 /*This is stacking all 6 years of traditional medicare inpatient files and save to my personal folder*/
