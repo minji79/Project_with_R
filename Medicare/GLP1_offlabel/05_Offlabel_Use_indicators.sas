@@ -69,10 +69,18 @@ quit;
 %yearly(data=medhistory_2016, refer=pde16.pde_file_2016);  /* 2725088 obs */
 
 /* stack all dataset */
-data input.glp1users_all_medhis_16to20;
+data input.glp1users_all_medhis_16to20_BN;
   set medhistory_2016 medhistory_2017 medhistory_2018 medhistory_2019 medhistory_2020;
 run; /* 17026990 obs */
 
+data input.glp1users_all_medhis_16to20;
+	set input.glp1users_all_medhis_16to20_BN;
+ 	drop BN; run;
+proc sql;
+	create table input.glp1users_all_medhis_16to20 as
+ 	select distinct *
+  from input.glp1users_all_medhis_16to20;
+quit;
 
 * 3. GNN list up diabetic medications based on 2024 ;
 
