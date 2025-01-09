@@ -201,8 +201,11 @@ proc freq data=input.studypop;
   title "alzh";
 run;
 
-
-
+/* obesity */
+proc freq data=input.studypop;
+  table obesity*offlabel_df4 / norow nopercent nocum chisq;
+  title "alzh";
+run;
 
 
 
