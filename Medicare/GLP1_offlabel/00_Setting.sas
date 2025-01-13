@@ -138,24 +138,36 @@ libname medpar21 "/cms01/data/dua/59883/medpar/2021/SAS";
 
 
 /* tm_carrier : 15-21 */
+libname tm_car15 "/cms01/data/dua/59883/tm_carrier/2015/SAS";
+libname tm_car16 "/cms01/data/dua/59883/tm_carrier/2016/SAS";
+libname tm_car17 "/cms01/data/dua/59883/tm_carrier/2017/SAS";
 libname tm_car18 "/cms01/data/dua/59883/tm_carrier/2018/SAS";
 libname tm_car19 "/cms01/data/dua/59883/tm_carrier/2019/SAS";
 libname tm_car20 "/cms01/data/dua/59883/tm_carrier/2020/SAS";
 libname tm_car21 "/cms01/data/dua/59883/tm_carrier/2021/SAS";
 
 /* tm_hha : 15-21 */ 
+libname tm_hha15 "/cms01/data/dua/59883/tm_hha/2015/SAS";
+libname tm_hha16 "/cms01/data/dua/59883/tm_hha/2016/SAS";
+libname tm_hha17 "/cms01/data/dua/59883/tm_hha/2017/SAS";
 libname tm_hha18 "/cms01/data/dua/59883/tm_hha/2018/SAS";
 libname tm_hha19 "/cms01/data/dua/59883/tm_hha/2019/SAS";
 libname tm_hha20 "/cms01/data/dua/59883/tm_hha/2020/SAS";
 libname tm_hha21 "/cms01/data/dua/59883/tm_hha/2021/SAS";
 
 /* tm_ip : 15-21 */ 
+libname tm_ip15 "/cms01/data/dua/59883/tm_ip/2015/SAS";
+libname tm_ip16 "/cms01/data/dua/59883/tm_ip/2016/SAS";
+libname tm_ip17 "/cms01/data/dua/59883/tm_ip/2017/SAS";
 libname tm_ip18 "/cms01/data/dua/59883/tm_ip/2018/SAS";
 libname tm_ip19 "/cms01/data/dua/59883/tm_ip/2019/SAS";
 libname tm_ip20 "/cms01/data/dua/59883/tm_ip/2020/SAS";
 libname tm_ip21 "/cms01/data/dua/59883/tm_ip/2021/SAS";
 
 /* tm_op : 15-21 */ 
+libname tm_op15 "/cms01/data/dua/59883/tm_op/2015/SAS";
+libname tm_op16 "/cms01/data/dua/59883/tm_op/2016/SAS";
+libname tm_op17 "/cms01/data/dua/59883/tm_op/2017/SAS";
 libname tm_op18 "/cms01/data/dua/59883/tm_op/2018/SAS";
 libname tm_op19 "/cms01/data/dua/59883/tm_op/2019/SAS";
 libname tm_op20 "/cms01/data/dua/59883/tm_op/2020/SAS";
