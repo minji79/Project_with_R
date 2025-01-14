@@ -225,9 +225,15 @@ quit;
 * 2. find diabetes by using ICD10;
 data diabetes_id;
 	set input.glp1users_beneid_17to20_diag_TM;
-	if ICD_DGNS_CD1 in ('E11','E1100','E1101','E11618','E11620','E11621','E11622','E11628','E11630','E11638','E11641', 'E11649', 'E1165', 'E1169', 'E118', 'E119');
+	if ICD_DGNS_CD1 in ('E11','E110','E1100','E1101',
+ 		'E111','E1110','E1111','E112','E1121','E1122','E1129','E113','E1131','E11311','E11319','E1132','E11321','E113211','E113212','E113213','E113219',
+  		'E11329','E113291','E113292','E113293','E113299',
+    		'E1133','E1134','E1135','E1136','E1137','E1139','E114','E115','E116',
+ 		'E11618', 'E11620','E11621','E11622','E11628','E11630','E11638','E11641', 'E11649', 'E1165', 'E1169', 'E118', 'E119');
 run;
 data diabetes_id; set diabetes_id; diabetes_tm = 1; run;
+
+* if ICD_DGNS_CD1 in ('E11','E1100','E1101','E11618', 'E11620','E11621','E11622','E11628','E11630','E11638','E11641', 'E11649', 'E1165', 'E1169', 'E118', 'E119');
 
 proc sql;
 	create table cc as
@@ -237,6 +243,10 @@ proc sql;
     on a.BENE_ID=b.BENE_ID;
 quit;
 data cc; set cc; if missing(diabetes_tm) then diabetes_tm =0; run;
+/*
+data cc_diabetes; set cc; where diabetes_tm =1; run; /* 44298 */
+*/
+
 proc freq data=cc; table diabetes_tm; run;
 
 * 3. merge obesity indicator with the original BENE_ID file; 
@@ -256,3 +266,15 @@ proc sql;
    	left join input.glp1users_beneid_17to20_cc as b
     on a.BENE_ID=b.BENE_ID;
 quit;
+
+
+/* from from DIABETES */
+data 
+	set pde2020_coverd;
+
+
+
+
+
+
+
