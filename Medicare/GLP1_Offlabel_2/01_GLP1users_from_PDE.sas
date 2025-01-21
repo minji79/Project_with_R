@@ -71,7 +71,7 @@ run;
 ************************************************************************************/
 
 /**************************************************
-* new table: input.glp1users_pde_17to20_v00
+* new table: input.glp1users_pde_17to20
 * original input.glp1users_pde_17to20_long
 * description: 
 *       distinct patient - the first fill
@@ -101,7 +101,7 @@ run;   /* n = 69,115 */
 proc sql;
 	create table input.glp1users_beneid_17to20 as
  	select distinct a.BENE_ID
-  	from input.glp1users_pde_17to20_v00 as a;
+  	from input.glp1users_pde_17to20 as a;
 quit;   /* 69115 obs */
 
 
