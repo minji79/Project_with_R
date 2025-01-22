@@ -300,61 +300,107 @@ proc freq data=input.offlabel_v04; table offlabel_df4; title "offlabel_df4"; run
 
 
 /************************************************************************************
-	5.    Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 1849, 2.68%)
+	5.    Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 1913, 2.77%)
 ************************************************************************************/
-
-* 1. select individuals with anti-diabetics medications at any time point;
 /**************************************************
 * new table: input.offlabel_v04
 * original table: input.glp1users_medhis_16to20
 * description: 
 **************************************************/
 
+/* 1. diabetic fill after first GLP-1 fill */
 proc sql;
-  create table 
-
-
-proc sql;
-   create table offlabel_df4 as
+   create table post_dm_med as
    select distinct BENE_ID
-   from input.glp1users_medhis_16to20;
-quit; /* 66085 */
+   from input.glp1users_medhis_16to20
+   where index_date < SRVC_DT;
+quit;
 
-* 2. offlabel_df inndicator;
-data offlabel_df4;
-  set offlabel_df4;
-  offlabel_df4_pre = 0;
+data post_dm_med; set post_dm_med; post_dm_med = 1; run;
+
+
+/* 2. diabetes dignosis after first GLP-1 fill */
+%macro yearly(year=);
+
+data glp1_newusers_&year;
+    set input.glp1users_pde_17to20;
+    where rx_year = &year;
+run;   
+
+proc sql;
+  create table post_dm_dig_&year as
+  select distinct a.BENE_ID,
+
+    (b1.diabetes_tm) as diabetes_tm,
+    (b2.diabetes_ever) as diabetes_ever,
+    (b3.diabetes_cc) as diabetes_cc
+
+  from glp1_newusers_&year as a
+
+  left join input.DM_TM b1 on a.BENE_ID = b1.BENE_ID and b1.diabetes_tm_yr > &year
+  left join input.DM_diabetes_ever b2 on a.BENE_ID = b2.BENE_ID and b2.diabetes_ever_yr > &year
+  left join input.DM_diabetes_cc b3 on a.BENE_ID = b3.BENE_ID and b3.diabetes_cc_yr > &year ;
+
+quit;
+
+/* diabetes_tm=1 | diabetes_ever=1 | diabetes_cc=1 -> have diabetes dignosis 1 year prior to Rx */
+data post_dm_dig_&year;
+  set post_dm_dig_&year;
+  if diabetes_tm=1 | diabetes_ever=1 | diabetes_cc=1 then post_dm_dig = 1;
+  else post_dm_dig = 0;
 run;
 
+%mend yearly;
+
+%yearly(year=2020);
+%yearly(year=2019);
+%yearly(year=2018);
+%yearly(year=2017);
+
+data post_dm_dig; set post_dm_dig_2020 post_dm_dig_2019 post_dm_dig_2018 post_dm_dig_2017; run;
+
+/* 3. merge post_dm_med + post_dm_dig */
 proc sql;
-   create table input.offlabel_v04 as
-   select distinct a.*, b.offlabel_df4_pre
-   from input.offlabel_v03 as a left join offlabel_df4 as b
+  create table offlabel_df5 as
+  select distinct a.BENE_ID,
+
+    (b1.post_dm_med) as post_dm_med,
+    (b2.post_dm_dig) as post_dm_dig
+
+  from input.glp1users_beneid_17to20 as a
+
+  left join post_dm_med b1 on a.BENE_ID = b1.BENE_ID
+  left join post_dm_dig b2 on a.BENE_ID = b2.BENE_ID ;
+
+quit;
+
+data offlabel_df5; 
+	set offlabel_df5;
+ 	if post_dm_med = 1 | post_dm_dig = 1 then post_dm = 1;
+  	else post_dm = 0;
+run;
+
+/* 4. merge post_dm_med + post_dm_dig */
+proc sql;
+   create table input.offlabel_v05 as
+   select distinct a.*, b.post_dm
+   from input.offlabel_v04 as a left join offlabel_df5 as b
    on a.BENE_ID=b.BENE_ID;
 quit;
 
-data input.offlabel_v04;
-  set input.offlabel_v04;
-  if missing(offlabel_df4_pre) then offlabel_df4_pre =1;
+data input.offlabel_v05;
+  set input.offlabel_v05;
+  if post_dm = 0 and offlabel_df4 =1 then offlabel_df5 =1;
 run;
+data input.offlabel_v05; set input.offlabel_v05; if missing(offlabel_df5) then offlabel_df5 =0; run;
 
-data input.offlabel_v04;
-  set input.offlabel_v04;
-  if offlabel_df4_pre = 1 and offlabel_df3 = 1 then offlabel_df4 = 1;
-  else offlabel_df4 = 0;
-run;
+proc print data=input.offlabel_v05 (obs=20); run;
 
-proc freq data=input.offlabel_v04; table offlabel_df4_pre; title "offlabel_df4"; run;
-proc freq data=input.offlabel_v04; table offlabel_df4; title "offlabel_df4"; run;
+proc freq data=input.offlabel_v05; table post_dm; title "offlabel_df4"; run;
+proc freq data=input.offlabel_v05; table offlabel_df5; title "offlabel_df4"; run;
 
 * 3. delete dataset;
 proc delete data =input.offlabel_v01; run;
 proc delete data =input.offlabel_v02; run;
 proc delete data =input.offlabel_v03; run;
-
-
-
-
-
-
-
+proc delete data =input.offlabel_v04; run;
