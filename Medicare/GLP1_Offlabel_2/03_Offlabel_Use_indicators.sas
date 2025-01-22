@@ -1,4 +1,16 @@
-
+/************************************************************************************
+| Project name : Identify off label use of GLP1 following several definitions
+| Task Purpose : 
+|      1. Definition 1 : Have no previous diabetic medication fill (non-GLP1) at first GLP-1 fill date (n = 6121, 8.86%)
+|      2. Definition 2 : Have no recorded diagnosis of diabetes 1 year prior to first fill (n = 30694, 44.41%)
+|      3. Definition 3 : Have no recorded diagnosis of diabetes from 2015 to 2021 (n = 21312, 30.84%)
+|      4. Definition 4 : Both (1) AND (2)   (n = 3365, 4.87%)
+|      5. Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 1913, 2.77%)
+| Final dataset : 
+|       input.offlabel_v05
+|       input.glp1users_all_medhis_16to20
+|       input.glp1users_medhis_16to20
+************************************************************************************/
 
 
 /************************************************************************************
