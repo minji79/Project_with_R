@@ -24,11 +24,6 @@ data input.glp1users_pde_17to20_demo;
   age_at_index = year(SRVC_DT) - year_birth;
 run;
 
-/* check */
-proc print data=input.glp1users_pde_17to20_demo (obs=20); 
-  var BENE_ID BENE_RACE_CD ;
-run;
-
 proc means data=input.glp1users_pde_17to20_demo n nmiss mean std;
   var age_at_index;
   title "age";
@@ -53,10 +48,17 @@ quit;
 
 proc sql;
   create table demo_state as
-  select distinct a.*, b.BENE_RACE_CD 
+  select distinct a.*, b.STATE_CODE   
   from input.glp1users_pde_17to20_demo as a left join mbsf20.mbsf_abcd_summary_2020 as b
   on a.BENE_ID = b.BENE_ID;
 quit;
+
+/* check */
+proc print data=demo_state (obs=20); 
+  var BENE_ID STATE_CODE;
+run;
+proc freq data=demo_state; table STATE_CODE; run;
+
 
 proc contents data=mbsf20.mbsf_abcd_summary_2020; run;
 
