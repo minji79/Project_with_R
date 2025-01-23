@@ -3,6 +3,7 @@
 | Task Purpose : 
 |      1. Identify UM status for each prescriptions of glp1 user
 |      2. Identify Part D coverage for each prescriptions of glp1 user (n=6330, 9.16% uncovered)
+|      3. 
 | Final dataset : 
 |	      input.glp1users_beneid_17to20_um
 |	      input.glp1users_pde_17to20_coverage 
@@ -83,9 +84,35 @@ run;
 
 proc freq data=input.glp1users_pde_17to20_coverage; table not_found_flag; run; /* 6330, 9.16% uncovered */
   
+/************************************************************************************
+	3.    Type of plan
+************************************************************************************/
+
+%macro yearly(year=, refer=);
+
+proc sql;
+	create table plan_&year as
+ 	select distinct a.*, b.CONTRACT_ID, b.DED_AMT, b.DED_COINS, b.DED_COPAY, b.DED_COSTSHARE_TIERS, b.EGHP_CALENDAR_YEAR_FLAG, 
+  				b.EGWP_INDICATOR, b.INCREASED_ICL, b.OOPT_AMT, b.PLAN_ID, b.REDUCED_COST_SHARE, b.REDUCED_DED, b.REDUCED_OOPT_CS, b.REDUCED_PREICL_CS
+	from input.glp1users_pde_17to20 as a
+ 	left join &refer as b
+  	on a.PLAN_CNTRCT_REC_ID = b.CONTRACT_ID and a.FORMULARY_ID = b.FORMULARY_ID
+   where year(SRVC_DT) = &year;
+quit;
+
+%mend yearly;
+%yearly(year=2020, refer=plan20.plan_char_2020);
+%yearly(year=2019, refer=plan19.plan_char_2019);
+%yearly(year=2018, refer=plan18.plan_char_2018);
+%yearly(year=2017, refer=plan17.plan_char_2017);
+%yearly(year=2016, refer=plan16.plan_char_2016);
+
+data input.glp1users_beneid_17to20_plan; 
+  set plan_2020 plan_2019 plan_2018 plan_2017 plan_2016; 
+run;
+
+proc print data = input.glp1users_beneid_17to20_plan (obs=10); run;
 
 
-
- 
 
 
