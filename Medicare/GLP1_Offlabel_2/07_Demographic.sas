@@ -49,23 +49,30 @@ quit;
 proc sql;
   create table demo_state as
   select distinct a.*, b.STATE_CODE   
-  from input.glp1users_pde_17to20_demo as a left join mbsf20.mbsf_abcd_summary_2020 as b
+  from input.glp1users_pde_17to20 as a left join mbsf20.mbsf_abcd_summary_2020 as b
   on a.BENE_ID = b.BENE_ID;
 quit;
 
-/* check */
-proc print data=demo_state (obs=20); 
-  var BENE_ID STATE_CODE;
+* make region indicator;
+data demo_state;
+    set demo_state;
+    length region $10.;
+
+    if STATE_CODE in ('07', '08', '09', '10', '20', '22', '23', '29', '33', '39', '41') then region = "Northeast";
+    else if STATE_CODE in ('14', '15', '16', '17', '23', '24', '25', '26', '28', '35', '36', '42', '44', '45', '52') then region = "Midwest";
+    else if STATE_CODE in ('01', '04', '10', '11', '18', '19', '21', '24', '25', '34', '36', '37', '40', '42', '43', '44', '46', '50', '51', '54') then region = "South";
+    else if STATE_CODE in ('02', '03', '05', '06', '12', '13', '26', '29', '30', '32', '38', '45', '46', '53', '63') then region = "West";
+    else region = "Unknown";
 run;
-proc freq data=demo_state; table STATE_CODE; run;
+proc freq data=demo_state; table region; run;
 
-
-proc contents data=mbsf20.mbsf_abcd_summary_2020; run;
-
-
-
-
-
+* merge with file;
+proc sql;
+  create table input.glp1users_pde_17to20_demo as
+  select distinct a.*, b.STATE_CODE, b.region
+  from input.glp1users_pde_17to20_demo as a left join demo_state as b
+  on a.BENE_ID = b.BENE_ID;
+quit;
 
 
 
