@@ -1,9 +1,14 @@
 /************************************************************************************
 | Project name : Identify off label use of GLP1 following several definitions
 | Task Purpose : 
-|      1. 
+|      1. the first GLP1 fill from 2018 - 2020 (n = 69,115)
+|      2. Demographics 
+|      3. Clinical characteristics - Comorbidities
+|      4. MA | UM | coverage | Plan characteristics
+|      5. GLP-1 use
+|      6. Cost calculation 
 | Final dataset : 
-|       00
+|       input.studypop
 ************************************************************************************/
 
 /************************************************************************************
@@ -232,13 +237,21 @@ proc freq data=year;
   title "Offlabel Use %";
 run;
 
+/************************************************************************************
+	6.    Cost calculation 
+************************************************************************************/
 
+* 1. OOP;
+proc ttest data=input.studypop;
+   class offlabel_df5;
+   var PTNT_PAY_AMT;
+   title "OOP Costs";
+run;
 
+* 2. TOT_RX_CST_AMT ;
+proc ttest data=input.studypop;
+   class offlabel_df5;
+   var TOT_RX_CST_AMT ;
+   title "TOT_RX_CST_AMT";
+run;
 
-/************************************************************************************/
-proc sql;
-   create table input.studypop as
-   select distinct a.*, b.*******
-   from input.studypop as a left join ********* as b
-   on a.BENE_ID = b.BENE_ID;
-quit; /* 69115 obs */ 
