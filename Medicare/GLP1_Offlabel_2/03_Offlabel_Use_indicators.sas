@@ -5,7 +5,7 @@
 |      2. Definition 2 : Have no recorded diagnosis of diabetes 1 year prior to first fill (n = 30694, 44.41%)
 |      3. Definition 3 : Have no prior recorded diagnosis of diabetes within 5 years prior to the first fill (n = 30694, 44.41%)
 |      4. Definition 4 : Both (1) AND (2)   (n = 4148, 6.00%)
-|      5. Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 2491, 3.60%)
+|      5. Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill within 1 year following the first GLP-1 fill (n = 2491, 3.60%)
 | Final dataset : 
 |       input.offlabel_v05
 |       input.glp1users_all_medhis_16to20
