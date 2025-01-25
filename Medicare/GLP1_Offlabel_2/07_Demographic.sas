@@ -41,7 +41,6 @@ proc sql;
   on a.BENE_ID = b.BENE_ID;
 quit;
 
-
 /************************************************************************************
 	3.   State
 ************************************************************************************/
@@ -73,6 +72,5 @@ proc sql;
   from input.glp1users_pde_17to20_demo as a left join demo_state as b
   on a.BENE_ID = b.BENE_ID;
 quit;
-
 
 
