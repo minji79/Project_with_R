@@ -3,13 +3,16 @@
 | Project name : identify GLP1 users with MA status indicators
 | Task Purpose : 
 |      1. GLP1 new users from 2018 - 2020 (n = 69,115)
+|      2. Remain the first fill among GLP1 new users's records from 2018 - 2020 (n = 69,115)
+|      3. Key ID summary for glp1 users (n = 69,115)
 | Final dataset : 
+|	input.glp1users_pde_17to20_long
 |	input.glp1users_pde_17to20
 |	input.glp1users_beneid_17to20
 ************************************************************************************/
 
 /************************************************************************************
-	1.    GLP1 new users from 2018 - 2020 (n = )
+	1.    GLP1 new users from 2018 - 2020 (n = 69,115)
 ************************************************************************************/
 
 /**************************************************
@@ -54,20 +57,9 @@ proc sql;
  	from input.glp1users_pde_17to20_long;
 quit;      /* 69115 obs */
 
-/************************************************************************************
-	2.    Specify the Rx Date
-************************************************************************************/
-
-data input.glp1users_pde_17to20_long;
-  set input.glp1users_pde_17to20_long;
-  rx_year = year(SRVC_DT);
-  rx_month = month(SRVC_DT);
-  rx_day = day(SRVC_DT);
-run;
-
 
 /************************************************************************************
-	3.    Remain the first fill among GLP1 new users's records from 2018 - 2020 (n = 69,115)
+	2.    Remain the first fill among GLP1 new users's records from 2018 - 2020 (n = 69,115)
 ************************************************************************************/
 
 /**************************************************
@@ -89,7 +81,7 @@ data input.glp1users_pde_17to20;
 run;   /* n = 69,115 */
 
 /************************************************************************************
-	4.    Key ID summary for glp1 users (n = 69,115)
+	3.    Key ID summary for glp1 users (n = 69,115)
 ************************************************************************************/
 
 /**************************************************
