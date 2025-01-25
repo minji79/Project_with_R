@@ -39,11 +39,12 @@ run;
 
 /* NA fill */
 data input.glp1users_beneid_17to20_um; set input.glp1users_beneid_17to20_um; if missing(STEP) then STEP = 0; run;
+data input.glp1users_beneid_17to20_um; set input.glp1users_beneid_17to20_um; if missing(PRIOR_AUTHORIZATION_YN) then PRIOR_AUTHORIZATION_YN = 0; run;
 
 /* Any restriction */
 data input.glp1users_beneid_17to20_um; 
   set input.glp1users_beneid_17to20_um; 
-  if not missing(PRIOR_AUTHORIZATION_YN) | not missing(STEP) then any_restict = 1;
+  if PRIOR_AUTHORIZATION_YN = 1 | STEP =1 then any_restict = 1;
   else any_restict = 0;
 run;
 
