@@ -1,11 +1,11 @@
 /************************************************************************************
 | Project name : Identify off label use of GLP1 following several definitions
 | Task Purpose : 
-|      1. Definition 1 : Have no previous diabetic medication fill (non-GLP1) at first GLP-1 fill date (n = 6121, 8.86%)
+|      1. Definition 1 : Have no previous diabetic medication fill (non-GLP1) at first GLP-1 fill date (n = 7737, 11.19%)
 |      2. Definition 2 : Have no recorded diagnosis of diabetes 1 year prior to first fill (n = 30694, 44.41%)
-|      3. Definition 3 : Have no recorded diagnosis of diabetes from 2015 to 2021 (n = 21312, 30.84%)
-|      4. Definition 4 : Both (1) AND (2)   (n = 3365, 4.87%)
-|      5. Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 1913, 2.77%)
+|      3. Definition 3 : Have no prior recorded diagnosis of diabetes within 5 years prior to the first fill (n = 30694, 44.41%)
+|      4. Definition 4 : Both (1) AND (2)   (n = 4148, 6.00%)
+|      5. Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 2491, 3.60%)
 | Final dataset : 
 |       input.offlabel_v05
 |       input.glp1users_all_medhis_16to20
@@ -14,7 +14,7 @@
 
 
 /************************************************************************************
-	1.    Definition 1 : Have no previous diabetic medication fill (non-GLP1) at first GLP-1 fill date (n = 6121, 8.86%)
+	1.    Definition 1 : Have no previous diabetic medication fill (non-GLP1) at first GLP-1 fill date (n = 7737, 11.19%)
 ************************************************************************************/
 
 * 1. indicate the first GLP-1 fill date (index_date);
@@ -130,7 +130,7 @@ data input.glp1users_medhis_16to20;
    
 run;   /* 2938909 obs */
 
-* 4. SRVC_DT < index_date;
+* 4. index_date - 365 < SRVC_DT < index_date;
 /**************************************************
 * new table: input.offlabel_v01
 * original table: input.glp1users_medhis_16to20
@@ -141,7 +141,7 @@ proc sql;
    create table offlabel_df1 as
    select distinct BENE_ID
    from input.glp1users_medhis_16to20
-   where SRVC_DT < index_date;
+   where SRVC_DT > index_date - 365 and SRVC_DT < index_date;
 quit; /* 62994 */
 
 * 5. offlabel_df1 inndicator;
@@ -188,21 +188,23 @@ proc sql;
   select distinct a.BENE_ID,
 
     (b1.diabetes_tm) as diabetes_tm,
-    (b2.diabetes_ever) as diabetes_ever,
-    (b3.diabetes_cc) as diabetes_cc
+    (b2.diabetes_2nd_tm) as diabetes_2nd_tm,
+    (b3.diabetes_ever) as diabetes_ever,
+    (b4.diabetes_cc) as diabetes_cc
 
   from glp1_newusers_&year as a
 
   left join input.DM_TM b1 on a.BENE_ID = b1.BENE_ID and b1.diabetes_tm_yr in (&year, &year-1)
-  left join input.DM_diabetes_ever b2 on a.BENE_ID = b2.BENE_ID and b2.diabetes_ever_yr in (&year, &year-1)
-  left join input.DM_diabetes_cc b3 on a.BENE_ID = b3.BENE_ID and b3.diabetes_cc_yr in (&year, &year-1);
+  left join input.DM_TM b2 on a.BENE_ID = b2.BENE_ID and b2.diabetes_2nd_tm_yr in (&year, &year-1)
+  left join input.DM_diabetes_ever b3 on a.BENE_ID = b3.BENE_ID and b3.diabetes_ever_yr in (&year, &year-1)
+  left join input.DM_diabetes_cc b4 on a.BENE_ID = b4.BENE_ID and b4.diabetes_cc_yr in (&year, &year-1);
 
 quit;
 
-/* diabetes_tm=1 | diabetes_ever=1 | diabetes_cc=1 -> have diabetes dignosis 1 year prior to Rx */
+/* diabetes_tm=1 | diabetes_2nd_tm = 1 | diabetes_ever=1 | diabetes_cc=1 -> have diabetes dignosis 1 year prior to Rx */
 data offlabel_&year;
   set offlabel_&year;
-  if diabetes_tm=1 | diabetes_ever=1 | diabetes_cc=1 then offlabel_df2 = 0;
+  if diabetes_tm=1 | diabetes_2nd_tm =1 | diabetes_ever=1 | diabetes_cc=1 then offlabel_df2 = 0;
   else offlabel_df2 = 1;
 run;
 
@@ -226,7 +228,7 @@ quit;
 proc freq data=input.offlabel_v02; table offlabel_df2; run;
 
 /************************************************************************************
-	3.    Definition 3 : Have no recorded diagnosis of diabetes from 2015 to 2021 (n = 21312, 30.84%)
+	3.    Definition 3 : Have no prior recorded diagnosis of diabetes within 5 years prior to the first fill (n = 30694, 44.41%)
 ************************************************************************************/
 
 * 1. offlabel_df3 inndicator;
@@ -236,48 +238,48 @@ proc freq data=input.offlabel_v02; table offlabel_df2; run;
 * description: 
 **************************************************/
 
-proc sql;
-  create table DM_TM as
-  select distinct a.BENE_ID, a.diabetes_tm
-  from input.DM_TM as a;
-quit;
-proc freq data=DM_TM; table diabetes_tm; run;
+
+%macro yearly(year=);
+
+data glp1_newusers_&year;
+    set input.glp1users_pde_17to20;
+    where rx_year = &year;
+run;   
 
 proc sql;
-  create table DM_diabetes_ever as
-  select distinct a.BENE_ID, a.diabetes_ever
-  from input.DM_diabetes_ever as a;
-quit;
-proc freq data=DM_diabetes_ever; table diabetes_ever; run;
-
-proc sql;
-  create table DM_diabetes_cc as
-  select distinct a.BENE_ID, a.diabetes_cc
-  from input.DM_diabetes_cc as a;
-quit;
-proc freq data=DM_diabetes_cc; table diabetes_cc; run;
-
-proc sql;
-  create table offlabel as
+  create table offlabel_&year as
   select distinct a.BENE_ID,
 
     (b1.diabetes_tm) as diabetes_tm,
-    (b2.diabetes_ever) as diabetes_ever,
-    (b3.diabetes_cc) as diabetes_cc
+    (b2.diabetes_2nd_tm) as diabetes_2nd_tm,
+    (b3.diabetes_ever) as diabetes_ever,
+    (b4.diabetes_cc) as diabetes_cc
 
-  from input.glp1users_beneid_17to20 as a
+  from glp1_newusers_&year as a
 
-  left join DM_TM b1 on a.BENE_ID = b1.BENE_ID
-  left join DM_diabetes_ever b2 on a.BENE_ID = b2.BENE_ID
-  left join DM_diabetes_cc b3 on a.BENE_ID = b3.BENE_ID ;
+  left join input.DM_TM b1 on a.BENE_ID = b1.BENE_ID and b1.diabetes_tm_yr in (&year, &year-5)
+  left join input.DM_TM b2 on a.BENE_ID = b2.BENE_ID and b2.diabetes_2nd_tm_yr in (&year, &year-5)
+  left join input.DM_diabetes_ever b3 on a.BENE_ID = b3.BENE_ID and b3.diabetes_ever_yr in (&year, &year-5)
+  left join input.DM_diabetes_cc b4 on a.BENE_ID = b4.BENE_ID and b4.diabetes_cc_yr in (&year, &year-5);
 
 quit;
 
-data offlabel_df3;
-  set offlabel;
-  if diabetes_tm=1 | diabetes_cc=1 then offlabel_df3 = 0;
+/* diabetes_tm=1 | diabetes_2nd_tm = 1 | diabetes_ever=1 | diabetes_cc=1 -> have diabetes dignosis 1 year prior to Rx */
+data offlabel_&year;
+  set offlabel_&year;
+  if diabetes_tm=1 | diabetes_2nd_tm =1 | diabetes_ever=1 | diabetes_cc=1 then offlabel_df3 = 0;
   else offlabel_df3 = 1;
 run;
+
+%mend yearly;
+
+%yearly(year=2020);
+%yearly(year=2019);
+%yearly(year=2018);
+%yearly(year=2017);
+
+data offlabel_df3; set offlabel_2020 offlabel_2019 offlabel_2018 offlabel_2017; run;
+proc print data=offlabel_df3 (obs=20); run;
 
 /* merge with study population */
 proc sql;
@@ -291,7 +293,7 @@ proc freq data=input.offlabel_v03; table offlabel_df3; run;
 
 
 /************************************************************************************
-	4.    Definition 4 : Both (1) AND (2)   (n = 3365, 4.87%)
+	4.    Definition 4 : Both (1) AND (2)   (n = 4148, 6.00%)
 ************************************************************************************/
 
 * 1. offlabel_df3 inndicator;
@@ -312,7 +314,7 @@ proc freq data=input.offlabel_v04; table offlabel_df4; title "offlabel_df4"; run
 
 
 /************************************************************************************
-	5.    Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 1913, 2.77%)
+	5.    Definition 5 : Had (3) and no diagnosis or (non-GLP1) diabetic fill after first GLP-1 fill (n = 2491, 3.60%)
 ************************************************************************************/
 /**************************************************
 * new table: input.offlabel_v04
@@ -325,7 +327,7 @@ proc sql;
    create table post_dm_med as
    select distinct BENE_ID
    from input.glp1users_medhis_16to20
-   where index_date < SRVC_DT;
+   where index_date < SRVC_DT and SRVC_DT <= index_date + 365;
 quit;
 
 data post_dm_med; set post_dm_med; post_dm_med = 1; run;
@@ -344,21 +346,23 @@ proc sql;
   select distinct a.BENE_ID,
 
     (b1.diabetes_tm) as diabetes_tm,
-    (b2.diabetes_ever) as diabetes_ever,
-    (b3.diabetes_cc) as diabetes_cc
+    (b2.diabetes_2nd_tm) as diabetes_2nd_tm,
+    (b3.diabetes_ever) as diabetes_ever,
+    (b4.diabetes_cc) as diabetes_cc
 
   from glp1_newusers_&year as a
 
-  left join input.DM_TM b1 on a.BENE_ID = b1.BENE_ID and b1.diabetes_tm_yr > &year
-  left join input.DM_diabetes_ever b2 on a.BENE_ID = b2.BENE_ID and b2.diabetes_ever_yr > &year
-  left join input.DM_diabetes_cc b3 on a.BENE_ID = b3.BENE_ID and b3.diabetes_cc_yr > &year ;
+  left join input.DM_TM b1 on a.BENE_ID = b1.BENE_ID and b1.diabetes_tm_yr in (&year, %eval(&year+1))
+  left join input.DM_TM b2 on a.BENE_ID = b2.BENE_ID and b2.diabetes_2nd_tm_yr in (&year, %eval(&year+1))
+  left join input.DM_diabetes_ever b3 on a.BENE_ID = b3.BENE_ID and b3.diabetes_ever_yr in (&year, %eval(&year+1))
+  left join input.DM_diabetes_cc b4 on a.BENE_ID = b4.BENE_ID and b4.diabetes_cc_yr in (&year, %eval(&year+1));
 
 quit;
 
 /* diabetes_tm=1 | diabetes_ever=1 | diabetes_cc=1 -> have diabetes dignosis 1 year prior to Rx */
 data post_dm_dig_&year;
   set post_dm_dig_&year;
-  if diabetes_tm=1 | diabetes_ever=1 | diabetes_cc=1 then post_dm_dig = 1;
+  if diabetes_tm=1 | diabetes_2nd_tm = 1 | diabetes_ever=1 | diabetes_cc=1 then post_dm_dig = 1;
   else post_dm_dig = 0;
 run;
 
@@ -370,6 +374,7 @@ run;
 %yearly(year=2017);
 
 data post_dm_dig; set post_dm_dig_2020 post_dm_dig_2019 post_dm_dig_2018 post_dm_dig_2017; run;
+
 
 /* 3. merge post_dm_med + post_dm_dig */
 proc sql;
