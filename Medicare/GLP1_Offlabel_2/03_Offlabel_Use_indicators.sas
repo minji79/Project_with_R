@@ -413,8 +413,8 @@ data input.offlabel_v05; set input.offlabel_v05; if missing(offlabel_df5) then o
 
 proc print data=input.offlabel_v05 (obs=20); run;
 
-proc freq data=input.offlabel_v05; table post_dm; title "offlabel_df4"; run;
-proc freq data=input.offlabel_v05; table offlabel_df5; title "offlabel_df4"; run;
+proc freq data=input.offlabel_v05; table post_dm; title "offlabel_df5"; run;
+proc freq data=input.offlabel_v05; table offlabel_df5; title "offlabel_df5"; run;
 
 * 3. delete dataset;
 proc delete data =input.offlabel_v01; run;
