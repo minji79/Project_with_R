@@ -4,8 +4,6 @@
 |      1. Identify MA subsidiaries (n = 16,334, 23.63%)
 |      2. 
 | Final dataset : 
-|	input.glp1users_pde_17to20  (with MA status indicators)
-|	input.glp1users_beneid_17to20
 |	input.glp1users_beneid_17to20_ma
 ************************************************************************************/
 
