@@ -1,10 +1,13 @@
-/************************************************************************************
-| Project name : Identify off label use of GLP1 following several definitions
-| Task Purpose : 
-|      1. 
-| Final dataset : 
-|       00
-************************************************************************************/
+#####################################################################################
+# Project name : Identify off label use of GLP1 following several definitions
+# Task Purpose : 
+#      1. 
+# Final dataset : 
+#       00
+#####################################################################################
+
+# in the directory
+cd glp1off/sas_input
 
 ## using R
 module load R
@@ -12,12 +15,10 @@ module load rstudio
 rstudio
 
 ## Setting
-setwd("/users/59883/c-mkim255-59883/glp1off/sas_input")
+#install.packages(c("MatchIt", "cobalt", "WeightIt", "haven", "optmatch", "sandwich", "lmtest", "marginaleffects", "data.table"))
 
-install.packages("MatchIt")
-install.packages("cobalt")
-install.packages("WeightIt")
-install.packages("haven")
+
+setwd("/users/59883/c-mkim255-59883/glp1off/sas_input")
 
 library(tidyverse)
 library(haven)
@@ -27,6 +28,10 @@ library(ggplot2)
 library(MatchIt)
 library(cobalt)
 library(WeightIt)
+library(optmatch)
+library(sandwich)
+library(lmtest)
+library(marginaleffects)
 
 # loading sas dataset
 df <- read_sas("studypop.sas7bdat")
@@ -42,13 +47,66 @@ df <- read_sas("studypop.sas7bdat")
 df <- df %>% rename(pa = PRIOR_AUTHORIZATION_YN, offlabel = offlabel_df5) 
 df$pa <- as.numeric(trimws(df$pa))
 
-# 2. check missingness (need to be no missingness)
-mice::md.pattern(df, plot=FALSE)
-
-# 3. drop 349 individuals with missing age
+# 2. drop 349 individuals with missing age
 df <- df %>% select(-CMPND_CD, -PD_DT, -not_found_flag, -DOB_DT)
 df <- df %>% filter(!is.na(age_at_index))
 
+# 3. check missingness (need to be no missingness)
+mice::md.pattern(df, plot=FALSE)
+
+# 4. Preprocessing dataset
+
+str(df)
+# add numeric variable for char
+df <- df %>% 
+      mutate(
+        region_n = case_when(
+          region == "Midwest" ~ 1,
+          region == "Northeast" ~ 2,
+          region == "South" ~ 3,
+          region == "West" ~ 4,
+          TRUE ~ NA_real_  
+        )
+      )
+
+# Convert categorical variables to factors & numerics
+cols_to_factor <- c("offlabel", "pa", "ma_16to20", "TIER_ID", "BENE_RACE_CD", "region", "obesity", "htn", "acute_mi", "hf", "stroke", "alzh")
+df[cols_to_factor] <- lapply(df[cols_to_factor], as.factor)
+df[cols_to_factor] <- lapply(df[cols_to_factor], as.numeric)
+
+#####################################################################################
+#     2.    Simple GLM - logistic model with binary outcome (off-label use or not)
+#####################################################################################
+
+
+model0 <- glm(offlabel ~ pa + ma_16to20 + TIER_ID + BENE_RACE_CD + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+             data = df, family = binomial)
+summary(model0)
+
+# exp(Estimate) and 95%ci
+coefs <- coef(summary(model0)) 
+estimates <- coefs[, 1]  
+std_errors <- coefs[, 2]  
+
+z_value <- 1.96  
+lower_ci <- estimates - z_value * std_errors
+upper_ci <- estimates + z_value * std_errors
+
+# Exponentiate estimates and confidence intervals
+exp_estimates <- exp(estimates)
+exp_lower_ci <- exp(lower_ci)
+exp_upper_ci <- exp(upper_ci)
+
+# Create a summary table
+result <- data.frame(
+  Estimate = estimates,
+  `Exp(Estimate)` = exp_estimates,
+  `Lower CI (95%)` = exp_lower_ci,
+  `Upper CI (95%)` = exp_upper_ci
+)
+
+# Print the table
+print(result)
 
 #####################################################################################
 #     2.    Balance before matching
@@ -66,13 +124,169 @@ summary(m.out0)
 #     3.    Propensity score matching
 #####################################################################################
 
-#Performs the matching (1:1 PS matching w/o replacement)
-m.out <- matchit(pa ~ ma_16to20 + BENEFIT_PHASE + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
+#Performs the matching (1:1 PS matching w/o replacement) - BENEFIT_PHASE
+m.out <- matchit(pa ~ ma_16to20 + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
                   data = df, method = "nearest") 
 
 m.out
 
 #Observations matched to each other (m.out$match.matrix)
 head(m.out$match.matrix, 10)
+
+#Propensity scores (m.out$distance)
+m.out$distance[1:10]
+summary(m.out$distance)
+
+#Print balance summary
+summary(m.out, un=FALSE)
+
+#Summarize balance statistics in a plot (4 methods)
+plot(m.out, type = "jitter", interactive = FALSE) 
+plot(summary(m.out),threshold=.2)
+love.plot(m.out, abs=TRUE, binary = "std", thresholds = c(m = .2),line = TRUE)
+bal.plot(m.out,var.name="age_at_index",which="both")
+
+
+#####################################################################################
+#     4.    Caliper Matching
+#####################################################################################
+
+m.out.mahal <- matchit(pa ~ ma_16to20 + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
+                  data = df, method = "nearest", 
+                       caliper = .1,mahalvars= ~age_at_index + TIER_ID) 
+summary(m.out.mahal,un=FALSE)
+
+#Check balance
+bal.tab(m.out.mahal, stats = c("m", "v", "ks"),      continuous="std",
+        binary="std",
+        s.d.denom = "treated")
+# plot blance
+love.plot(m.out.mahal,
+          var.order = "unadjusted", binary = "std",
+          abs = TRUE,
+          line = TRUE,threshold=.2)
+
+
+#####################################################################################
+#     4.    Full matching -> cannot run (broken pipe)
+#####################################################################################
+
+#Note: you need to also install the optmatch package to use full matching
+#install.packages("optmatch") #make sure to install the package the first time using it
+
+m.out.full <- matchit(pa ~ ma_16to20 + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
+                  data = df, method = "full", estimand = "ATT")
+
+m.out.full
+
+#####################################################################################
+#     5.    Propensity Score Weighting 
+#####################################################################################
+#Estimate the weights
+w.out <- weightit(pa ~ ma_16to20 + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
+                  data = df, method = "ps", estimand = "ATT") 
+
+w.out
+
+# plot weight
+plot(summary(w.out))
+
+#Check balance
+bal.tab(w.out, stats = c("m", "v", "ks"),      continuous="std",
+        binary="std",
+        s.d.denom = "treated")
+
+# plot blance
+love.plot(w.out,
+          var.order = "unadjusted", binary = "std",
+          abs = TRUE,
+          line = TRUE,threshold=.2)
+
+
+#####################################################################################
+#     6.    Estimating the effect after matching
+#####################################################################################
+
+# 1. Extract matched dataset
+matched.data <- match.data(m.out.mahal, data = df)  
+nrow(matched.data)  # 7340 individuals
+names(matched.data)
+
+# 2. Preprocessing dataset
+
+str(matched.data)
+# drop variables with one level: step 
+# add numeric variable for char
+# race: 0 = Unknown 1 = Non-Hispanic White 2 = Black (Or African-American) 3 = Other 4 = Asian/Pacific Islander 5 = Hispanic 6 = American Indian / Alaska Native 
+matched.data <- matched.data %>% 
+      mutate(
+        region_n = case_when(
+          region == "Midwest" ~ 1,
+          region == "Northeast" ~ 2,
+          region == "South" ~ 3,
+          region == "West" ~ 4,
+          TRUE ~ NA_real_  
+        )
+      )
+
+# Convert categorical variables to factors & numerics
+cols_to_factor <- c("offlabel", "pa", "ma_16to20", "TIER_ID", "BENE_RACE_CD", "region", "obesity", "htn", "acute_mi", "hf", "stroke", "alzh")
+matched.data[cols_to_factor] <- lapply(matched.data[cols_to_factor], as.factor)
+matched.data[cols_to_factor] <- lapply(matched.data[cols_to_factor], as.numeric)
+
+
+# 3. Outcome model (difference in means; like a t-test but done using linear regression with no predictors besides treatment status)
+model1 <- glm(offlabel ~ pa, data = matched.data, weights = weights)
+coeftest(model1, vcov. = vcovCL, cluster = ~subclass)
+
+
+# 4. Do regression adjustment on the matched samples
+#options(scipen = 999)
+#options(scipen = 0)
+model2 <- glm(offlabel ~ pa + ma_16to20 + TIER_ID + BENE_RACE_CD + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+             data = matched.data, weights = weights)
+
+coeftest(model2, vcov. = vcovCL, cluster = ~subclass)
+
+
+# exp(Estimate) and 95%ci
+coefs <- coeftest(model2, vcov. = vcovCL, cluster = ~subclass)
+estimates <- coefs[, 1]  
+std_errors <- coefs[, 2]  
+
+z_value <- 1.96  
+lower_ci <- estimates - z_value * std_errors
+upper_ci <- estimates + z_value * std_errors
+
+# Exponentiate estimates and confidence intervals
+exp_estimates <- exp(estimates)
+exp_lower_ci <- exp(lower_ci)
+exp_upper_ci <- exp(upper_ci)
+
+# Create a summary table
+result <- data.frame(
+  Estimate = estimates,
+  `Exp(Estimate)` = exp_estimates,
+  `Lower CI (95%)` = exp_lower_ci,
+  `Upper CI (95%)` = exp_upper_ci
+)
+
+# Print the table
+print(result)
+
+# 5. Marginal effect
+comp <- comparisons(model2,
+                     variables = "pa",
+                     vcov = ~subclass,
+                     newdata = subset(matched.data, pa == 1),
+                     wts = "weights")
+summary(comp)
+
+
+
+
+
+
+
 
 
