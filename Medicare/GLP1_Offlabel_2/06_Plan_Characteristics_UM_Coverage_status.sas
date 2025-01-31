@@ -115,6 +115,34 @@ run;
 
 proc print data = input.glp1users_beneid_17to20_plan (obs=10); run;
 
+proc print data = plan20.plan_char_2020 (obs=10); run;
+data plan20;
+	set plan20.plan_char_2020;
+ 	cov_cri $10. ded_ap $10.;
+ 	cov_cri = input(COV_CRITERIA, $BEN_COV);
+ 	ded_ap = input(DED_APPLY, $DED_AP);
+run;
+
+data plan20;
+    set plan20.plan_char_2020;
+    length Cov_cri $10 Ded_ap $10;
+    Cov_cri = put(COV_CRITERIA, $bene_cov.);
+    Ded_ap = put(DED_APPLY, $ded_ap.);
+run;
+proc print data = plan20 (obs=10); run;
+
+data plan19;
+    set plan19.plan_char_2019;
+    Cov_cri = put(COV_CRITERIA, $bene_cov.);
+    Ded_ap = put(DED_APPLY, $ded_ap.);
+run;
+proc print data = plan19 (obs=10); run;
+
+
+
+proc print data = plan19.plan_char_2019 (obs=10); run;
+
+
 
 
 
