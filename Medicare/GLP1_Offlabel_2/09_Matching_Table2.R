@@ -77,7 +77,7 @@ df <- df %>%
 
 df <- df %>% 
       mutate(
-      um = ifelse(PRIOR_AUTHORIZATION_YN ==1 | STEP != 0 | QUANTITY_LIMIT_YN ==1, 1, 0)
+      um = ifelse(PRIOR_AUTHORIZATION_YN ==1 | STEP != 0, 1, 0)
       ) %>%
       rename(offlabel = offlabel_df5, pa = PRIOR_AUTHORIZATION_YN, step = STEP, qnt =QUANTITY_LIMIT_YN, tier = TIER_ID, uncovered_byD = not_found_flag, sex = GNDR_CD, race = BENE_RACE_CD) 
 
@@ -96,28 +96,17 @@ mice::md.pattern(df, plot=FALSE)
 #     2.    Simple GLM - logistic model with binary outcome (off-label use or not)
 #####################################################################################
 
-model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + year + sex + race + region_n + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model0)
 
-model1 <- glm(offlabel ~ pa + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+# seperately 
+model1 <- glm(offlabel ~ pa + step + ma_16to20 + uncovered_byD + tier + year + sex + race + region_n + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model1)
 
-model2 <- glm(offlabel ~ step + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
-             data = df, family = binomial)
-summary(model2)
-
-model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
-             data = df, family = binomial)
-summary(model3)
-
-model4 <- glm(offlabel ~ pa + step + qnt + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
-             data = df, family = binomial)
-summary(model4)
-
 # exp(Estimate) and 95%ci
-coefs <- coef(summary(model4)) 
+coefs <- coef(summary(model0)) 
 estimates <- coefs[, 1]  
 std_errors <- coefs[, 2]  
 
@@ -145,7 +134,7 @@ print(result)
 #####################################################################################
 
 # No matching; constructing a pre-match matchit object (method=NULL)
-m.out0 <- matchit(pa ~ ma_16to20 + BENEFIT_PHASE + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
+m.out0 <- matchit(um ~ ma_16to20 + tier + sex + age_at_index + race + region_n + obesity + htn + acute_mi + hf + stroke + alzh, 
                   data = df, method = NULL, distance = "glm")
 
 # Checking balance prior to matching
@@ -157,7 +146,7 @@ summary(m.out0)
 #####################################################################################
 
 #Performs the matching (1:1 PS matching w/o replacement) - BENEFIT_PHASE
-m.out <- matchit(pa ~ ma_16to20 + TIER_ID + STEP + age_at_index + BENE_RACE_CD + region + obesity + htn + acute_mi + hf + stroke + alzh, 
+m.out <- matchit(um ~ ma_16to20 + tier + sex + age_at_index + race + region_n + obesity + htn + acute_mi + hf + stroke + alzh, 
                   data = df, method = "nearest") 
 
 m.out
