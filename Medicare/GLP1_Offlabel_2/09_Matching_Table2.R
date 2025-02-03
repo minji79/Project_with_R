@@ -54,8 +54,10 @@ df <- df %>%
       region == "South" ~ 3,
       region == "West" ~ 4,
       TRUE ~ 5  # Keep any other values and NA as 5 (optional)
-    )
+    ),
+    year = year(SRVC_DT)
   )
+
 
 # fill NA with 0
 df <- df %>%
@@ -93,24 +95,24 @@ mice::md.pattern(df, plot=FALSE)
 #     2.    Simple GLM - logistic model with binary outcome (off-label use or not)
 #####################################################################################
 
-model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model0)
 
-model1 <- glm(offlabel ~ pa + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model1 <- glm(offlabel ~ pa + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model1)
 
-model2 <- glm(offlabel ~ step + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model2 <- glm(offlabel ~ step + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model2)
 
-model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model3)
 
 # exp(Estimate) and 95%ci
-coefs <- coef(summary(model2)) 
+coefs <- coef(summary(model3)) 
 estimates <- coefs[, 1]  
 std_errors <- coefs[, 2]  
 
