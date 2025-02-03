@@ -46,6 +46,7 @@ df$TIER_ID <- as.numeric(df$TIER_ID)
 df$STEP <- as.numeric(df$STEP)
 df$QUANTITY_LIMIT_YN <- as.numeric(df$QUANTITY_LIMIT_YN)
 df$PRIOR_AUTHORIZATION_YN <- as.numeric(df$PRIOR_AUTHORIZATION_YN)
+df$GNDR_CD <- as.numeric(df$GNDR_CD)  # GNDR_CD == 1 -> male
 df <- df %>% 
   mutate(
     region_n = case_when(
@@ -78,7 +79,7 @@ df <- df %>%
       mutate(
       um = ifelse(PRIOR_AUTHORIZATION_YN ==1 | STEP != 0 | QUANTITY_LIMIT_YN ==1, 1, 0)
       ) %>%
-      rename(offlabel = offlabel_df5, pa = PRIOR_AUTHORIZATION_YN, step = STEP, qnt =QUANTITY_LIMIT_YN, tier = TIER_ID, uncovered_byD = not_found_flag, race = BENE_RACE_CD) 
+      rename(offlabel = offlabel_df5, pa = PRIOR_AUTHORIZATION_YN, step = STEP, qnt =QUANTITY_LIMIT_YN, tier = TIER_ID, uncovered_byD = not_found_flag, sex = GNDR_CD, race = BENE_RACE_CD) 
 
 
 # 3. drop 349 individuals with missing age
@@ -95,19 +96,19 @@ mice::md.pattern(df, plot=FALSE)
 #     2.    Simple GLM - logistic model with binary outcome (off-label use or not)
 #####################################################################################
 
-model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model0)
 
-model1 <- glm(offlabel ~ pa + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model1 <- glm(offlabel ~ pa + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model1)
 
-model2 <- glm(offlabel ~ step + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model2 <- glm(offlabel ~ step + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model2)
 
-model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + year + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model3)
 
@@ -127,9 +128,9 @@ exp_upper_ci <- exp(upper_ci)
 
 # Create a summary table
 result <- data.frame(
-  `aOR, Exp(Estimate)` = exp_estimates,
-  `Lower CI (95%)` = exp_lower_ci,
-  `Upper CI (95%)` = exp_upper_ci
+  `aOR, Exp(Estimate)` = round(exp_estimates, 3),
+  `Lower CI (95%)` = round(exp_lower_ci, 3),
+  `Upper CI (95%)` = round(exp_upper_ci, 3)
 )
 
 # Print the table
