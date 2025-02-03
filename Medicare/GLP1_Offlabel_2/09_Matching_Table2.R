@@ -112,8 +112,12 @@ model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + year + sex + r
              data = df, family = binomial)
 summary(model3)
 
+model4 <- glm(offlabel ~ pa + step + qnt + ma_16to20 + uncovered_byD + tier + year + sex + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+             data = df, family = binomial)
+summary(model4)
+
 # exp(Estimate) and 95%ci
-coefs <- coef(summary(model3)) 
+coefs <- coef(summary(model4)) 
 estimates <- coefs[, 1]  
 std_errors <- coefs[, 2]  
 
