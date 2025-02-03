@@ -40,51 +40,77 @@ df <- read_sas("studypop.sas7bdat")
 #     1.    proprocessing before matching (drop 349 individuals with missing age)
 #####################################################################################
 
-# 1. change variable name and format
-# Treated = PRIOR_AUTHORIZATION_YN (0/1) -> pa
+# 1. Preprocessing dataset
+# convert in to numeric variables
+df$TIER_ID <- as.numeric(df$TIER_ID)
+df$STEP <- as.numeric(df$STEP)
+df$QUANTITY_LIMIT_YN <- as.numeric(df$QUANTITY_LIMIT_YN)
+df$PRIOR_AUTHORIZATION_YN <- as.numeric(df$PRIOR_AUTHORIZATION_YN)
+df <- df %>% 
+  mutate(
+    region_n = case_when(
+      region == "Midwest" ~ 1,
+      region == "Northeast" ~ 2,
+      region == "South" ~ 3,
+      region == "West" ~ 4,
+      TRUE ~ 5  # Keep any other values and NA as 5 (optional)
+    )
+  )
+
+# fill NA with 0
+df <- df %>%
+  mutate(
+        TIER_ID = ifelse(is.na(TIER_ID), 0, TIER_ID),
+        STEP = ifelse(is.na(STEP), 0, STEP),
+        QUANTITY_LIMIT_YN = ifelse(is.na(QUANTITY_LIMIT_YN), 0, QUANTITY_LIMIT_YN),
+        PRIOR_AUTHORIZATION_YN = ifelse(is.na(PRIOR_AUTHORIZATION_YN), 0, PRIOR_AUTHORIZATION_YN),
+        not_found_flag = ifelse(is.na(not_found_flag), 0, not_found_flag)
+  )
+
+
+# 2. change variable name and format
+# treated = PRIOR_AUTHORIZATION_YN ==1 | STEP != 0 | QUANTITY_LIMIT_YN ==1
 # outcome = offlabel_df5 (0/1) -> offlabel
 
-df <- df %>% rename(pa = PRIOR_AUTHORIZATION_YN, offlabel = offlabel_df5) 
-df$pa <- as.numeric(trimws(df$pa))
-
-# 2. drop 349 individuals with missing age
-df <- df %>% select(-CMPND_CD, -PD_DT, -not_found_flag, -DOB_DT)
-df <- df %>% filter(!is.na(age_at_index))
-
-# 3. check missingness (need to be no missingness)
-mice::md.pattern(df, plot=FALSE)
-
-# 4. Preprocessing dataset
-
-str(df)
-# add numeric variable for char
 df <- df %>% 
       mutate(
-        region_n = case_when(
-          region == "Midwest" ~ 1,
-          region == "Northeast" ~ 2,
-          region == "South" ~ 3,
-          region == "West" ~ 4,
-          TRUE ~ NA_real_  
-        )
-      )
+      um = ifelse(PRIOR_AUTHORIZATION_YN ==1 | STEP != 0 | QUANTITY_LIMIT_YN ==1, 1, 0)
+      ) %>%
+      rename(offlabel = offlabel_df5, pa = PRIOR_AUTHORIZATION_YN, step = STEP, qnt =QUANTITY_LIMIT_YN, tier = TIER_ID, uncovered_byD = not_found_flag, race = BENE_RACE_CD) 
 
-# Convert categorical variables to factors & numerics
-cols_to_factor <- c("offlabel", "pa", "ma_16to20", "TIER_ID", "BENE_RACE_CD", "region", "obesity", "htn", "acute_mi", "hf", "stroke", "alzh")
-df[cols_to_factor] <- lapply(df[cols_to_factor], as.factor)
-df[cols_to_factor] <- lapply(df[cols_to_factor], as.numeric)
+
+# 3. drop 349 individuals with missing age
+df <- df %>% select(-CMPND_CD, -PD_DT, -DOB_DT)
+df <- df %>% filter(!is.na(age_at_index))
+
+# 4. drop 349 individuals with missing age
+
+# 4. check missingness (need to be no missingness)
+mice::md.pattern(df, plot=FALSE)
+
 
 #####################################################################################
 #     2.    Simple GLM - logistic model with binary outcome (off-label use or not)
 #####################################################################################
 
-
-model0 <- glm(offlabel ~ pa + ma_16to20 + TIER_ID + BENE_RACE_CD + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+model0 <- glm(offlabel ~ um + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
              data = df, family = binomial)
 summary(model0)
 
+model1 <- glm(offlabel ~ pa + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+             data = df, family = binomial)
+summary(model1)
+
+model2 <- glm(offlabel ~ step + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+             data = df, family = binomial)
+summary(model2)
+
+model3 <- glm(offlabel ~ qnt + ma_16to20 + uncovered_byD + tier + race + region + age_at_index + obesity + htn + acute_mi + hf + stroke + alzh, 
+             data = df, family = binomial)
+summary(model3)
+
 # exp(Estimate) and 95%ci
-coefs <- coef(summary(model0)) 
+coefs <- coef(summary(model2)) 
 estimates <- coefs[, 1]  
 std_errors <- coefs[, 2]  
 
@@ -99,8 +125,7 @@ exp_upper_ci <- exp(upper_ci)
 
 # Create a summary table
 result <- data.frame(
-  Estimate = estimates,
-  `Exp(Estimate)` = exp_estimates,
+  `aOR, Exp(Estimate)` = exp_estimates,
   `Lower CI (95%)` = exp_lower_ci,
   `Upper CI (95%)` = exp_upper_ci
 )
